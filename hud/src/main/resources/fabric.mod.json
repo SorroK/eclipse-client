@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "eclipse-hud",
+  "version": "${version}",
+  "name": "Eclipse HUD",
+  "description": "Eclipse Client's own compact client HUD with FPS, coordinates, biome, dimension, and a real clock.",
+  "authors": [
+    "Eclipse Client"
+  ],
+  "license": "MIT",
+  "icon": "assets/eclipse-hud/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.eclipseclient.hud.EclipseHudClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": ">=0.141.0"
+  }
+}

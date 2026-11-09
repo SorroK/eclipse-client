@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eclipse Client</title>
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="window">
+      <header class="titlebar" id="titlebar">
+        <div class="brand">
+          <svg class="brand-eclipse" viewBox="0 0 32 32" aria-hidden="true">
+            <defs>
+              <radialGradient id="brandEclipseGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0" stop-color="#8ef7bd" stop-opacity=".55" />
+                <stop offset=".55" stop-color="#48c98b" stop-opacity=".18" />
+                <stop offset="1" stop-color="#48c98b" stop-opacity="0" />
+              </radialGradient>
+              <linearGradient id="brandEclipseRim" x1="4" y1="3" x2="29" y2="30" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#f0fff6" />
+                <stop offset=".45" stop-color="#83f2b8" />
+                <stop offset="1" stop-color="#f3c983" />
+              </linearGradient>
+            </defs>
+            <circle cx="16" cy="16" r="15" fill="url(#brandEclipseGlow)" />
+            <circle cx="16" cy="16" r="10.6" fill="url(#brandEclipseRim)" />
+            <circle cx="17.2" cy="15.1" r="9.3" fill="#06110d" />
+            <ellipse cx="16" cy="16.4" rx="14.4" ry="6" transform="rotate(-27 16 16.4)" fill="none" stroke="#93f7bf" stroke-opacity=".24" stroke-width=".6" />
+            <circle cx="27.7" cy="9.2" r="1.15" fill="#e1ffec" />
+            <path d="M23.7 7.2v2.2M22.6 8.3h2.2" stroke="#f9e3b5" stroke-width=".7" stroke-linecap="round" opacity=".8" />
+          </svg>
+          <span class="brand-word">ECLIPSE</span>
+          <span class="brand-tag">Client</span>
+        </div>
+        <div class="titlebar-drag" data-tauri-drag-region></div>
+        <div class="titlebar-tools">
+          <button class="chrome-btn console-trigger" id="titleConsoleBtn" title="Toggle console" aria-label="Toggle console">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="m4.5 6 4 4-4 4M10.5 14h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="unread-dot" aria-hidden="true"></span>
+          </button>
+          <span class="titlebar-sep"></span>
+          <button class="chrome-btn" data-window="minimize" title="Minimize" aria-label="Minimize window">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+          </button>
+          <button class="chrome-btn maximize-btn" data-window="maximize" title="Maximize" aria-label="Maximize window">
+            <svg class="icon-max" viewBox="0 0 20 20" aria-hidden="true"><rect x="4.5" y="4.5" width="11" height="11" rx="1" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
+            <svg class="icon-restore" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 6V4.6h8.4V13H14M4.6 7H13v8.4H4.6z" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
+          </button>
+          <button class="chrome-btn chrome-close" data-window="close" title="Close" aria-label="Close window">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="app-shell">
+        <aside class="sidebar">
+          <p class="nav-label">Workshop</p>
+          <nav class="nav" aria-label="Main navigation">
+            <button class="nav-item active" data-page="play" title="Home">
+              <span class="nav-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.2 10 3.4l6.5 5.8v7.3h-4v-4.3h-5v4.3h-4Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" /></svg>
+              </span>
+              <span>Home</span>
+            </button>
+            <button class="nav-item" data-page="versions" title="Versions">
+              <span class="nav-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2.8 6.7 3.4L10 9.6 3.3 6.2ZM3.3 10l6.7 3.4 6.7-3.4M3.3 13.8 10 17.2l6.7-3.4" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" /></svg>
+              </span>
+              <span>Versions</span>
+            </button>
+            <button class="nav-item" data-page="modrinth" title="Modrinth">
+              <span class="nav-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.9a7.1 7.1 0 1 0 7.1 7.1M10 6.1v7.8M6.1 10h7.8" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" /><path d="M14.6 3.5 17 5.9l-2.4 2.4" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </span>
+              <span>Modrinth</span>
+            </button>
+            <button class="nav-item" data-page="settings" title="Settings">
+              <span class="nav-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h12" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" /><circle cx="7" cy="6" r="1.6" fill="currentColor" /><circle cx="13" cy="10" r="1.6" fill="currentColor" /><circle cx="8.5" cy="14" r="1.6" fill="currentColor" /></svg>
+              </span>
+              <span>Settings</span>
+            </button>
+          </nav>
+
+          <div class="sidebar-meta">
+            <p class="nav-label">On this PC</p>
+            <p class="meta-value" id="installedCount">No versions installed</p>
+            <div class="meta-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+          </div>
+
+          <div class="sidebar-spacer"></div>
+
+          <button class="account-chip" id="openAccounts" aria-haspopup="dialog" aria-controls="accountsModal" title="Manage accounts">
+            <span class="avatar avatar-md" id="sidebarAvatar">P</span>
+            <span class="account-chip-text">
+              <strong id="sidebarName">Player</strong>
+              <span id="sidebarType">Offline profile</span>
+            </span>
+            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </button>
+          <p class="sidebar-legal">Unofficial launcher.<br />Not affiliated with Mojang.</p>
+        </aside>
+
+        <main class="workspace">
+          <div class="pages" id="pages">
+            <section class="page active" id="page-play" data-page-panel="play">
+              <header class="page-header">
+                <div>
+                  <p class="eyebrow">Your workshop</p>
+                  <h1 id="greeting">Ready when you are.</h1>
+                  <p class="subtitle">A lean, quietly powerful way into Minecraft.</p>
+                </div>
+                <div class="header-chips">
+                  <span class="pill" id="latestReleaseChip"><span class="pill-dot"></span>Latest —</span>
+                  <span class="pill" id="connectivityChip"><span class="pill-dot"></span>Connecting</span>
+                </div>
+              </header>
+
+              <article class="hero card">
+                <div class="hero-backdrop" aria-hidden="true"></div>
+                <div class="hero-copy">
+                  <div class="hero-kicker">
+                    <span class="badge" id="heroType">RELEASE</span>
+                    <span>Minecraft</span>
+                    <strong id="heroVersion">—</strong>
+                  </div>
+                  <h2 class="hero-title">Pyrakits.<br /><em>Is.</em><br />Easy.</h2>
+                  <p class="hero-sub" id="heroSub">Pick a version and step into your next world.</p>
+                  <div class="hero-actions">
+                    <button class="btn btn-primary btn-launch" id="playBtn">
+                      <span class="btn-icon" id="playIcon" aria-hidden="true">▶</span>
+                      <span id="playLabel">Launch game</span>
+                      <span class="btn-shimmer" aria-hidden="true"></span>
+                    </button>
+                    <button class="btn btn-quiet" data-page="versions">Version library</button>
+                  </div>
+                  <p class="launch-hint" id="launchHint">Choose a version, then press launch.</p>
+                </div>
+                <div class="hero-art" aria-hidden="true">
+                  <div class="orbit orbit-a"></div>
+                  <div class="orbit orbit-b"></div>
+                  <svg class="hero-eclipse" viewBox="0 0 520 540">
+                    <defs>
+                      <radialGradient id="heroEclipseHalo" cx="50%" cy="50%" r="50%">
+                        <stop offset="0" stop-color="var(--hero-halo-1)" stop-opacity=".6" />
+                        <stop offset=".34" stop-color="var(--hero-halo-2)" stop-opacity=".24" />
+                        <stop offset=".7" stop-color="var(--hero-halo-3)" stop-opacity=".07" />
+                        <stop offset="1" stop-color="#0a1411" stop-opacity="0" />
+                      </radialGradient>
+                      <linearGradient id="heroEclipseRim" x1="112" y1="82" x2="432" y2="402" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="var(--hero-rim-1)" />
+                        <stop offset=".38" stop-color="var(--hero-rim-2)" />
+                        <stop offset=".68" stop-color="var(--hero-rim-3)" />
+                        <stop offset="1" stop-color="var(--hero-rim-4)" />
+                      </linearGradient>
+                      <radialGradient id="heroEclipseMoon" cx="38%" cy="34%" r="78%">
+                        <stop offset="0" stop-color="#10251d" />
+                        <stop offset=".6" stop-color="#07130f" />
+                        <stop offset="1" stop-color="#020806" />
+                      </radialGradient>
+                      <linearGradient id="heroTerrain" x1="260" y1="430" x2="260" y2="520" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="#10271d" />
+                        <stop offset="1" stop-color="#050c0a" />
+                      </linearGradient>
+                      <linearGradient id="heroHorizon" x1="260" y1="360" x2="260" y2="470" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="#72ffc0" stop-opacity=".16" />
+                        <stop offset="1" stop-color="#72ffc0" stop-opacity="0" />
+                      </linearGradient>
+                      <filter id="heroEclipseBlur" x="-70%" y="-70%" width="240%" height="240%">
+                        <feGaussianBlur stdDeviation="20" />
+                      </filter>
+                      <filter id="heroEclipseSmallBlur" x="-100%" y="-100%" width="300%" height="300%">
+                        <feGaussianBlur stdDeviation="6" />
+                      </filter>
+                    </defs>
+                    <ellipse cx="260" cy="246" rx="232" ry="194" fill="url(#heroEclipseHalo)" />
+                    <circle cx="260" cy="240" r="124" fill="none" stroke="url(#heroEclipseRim)" stroke-width="18" opacity=".35" filter="url(#heroEclipseBlur)" />
+                    <circle cx="260" cy="240" r="116" fill="url(#heroEclipseRim)" />
+                    <circle cx="267" cy="234" r="104" fill="url(#heroEclipseMoon)" />
+                    <path d="M337 151a132 132 0 0 1 21 91" fill="none" stroke="#fff4d6" stroke-width="4.2" stroke-linecap="round" opacity=".85" filter="url(#heroEclipseSmallBlur)" />
+                    <circle cx="341" cy="181" r="4" fill="#fff6df" />
+                    <g class="hero-orbiter">
+                      <ellipse class="orbiter-ring" cx="260" cy="252" rx="206" ry="84" transform="rotate(-22 260 252)" fill="none" stroke="var(--hero-orbiter)" stroke-opacity=".22" stroke-width="1.2" stroke-dasharray="2 9" />
+                      <circle class="orbiter-glow" cx="424" cy="147" r="10" fill="var(--hero-orbiter)" opacity=".14" />
+                      <circle class="orbiter-dot" cx="424" cy="147" r="4.2" fill="var(--hero-orbiter-dot)" />
+                    </g>
+                    <g class="hero-stars">
+                      <rect x="82" y="111" width="4" height="4" />
+                      <rect x="421" y="69" width="3" height="3" opacity=".8" />
+                      <rect x="432" y="302" width="3" height="3" opacity=".55" />
+                      <rect x="91" y="330" width="3" height="3" opacity=".65" />
+                      <rect x="193" y="74" width="2" height="2" opacity=".5" />
+                      <rect x="345" y="386" width="2" height="2" opacity=".45" />
+                    </g>
+                    <g class="hero-mini mini-one">
+                      <polygon points="76,292 107,309 76,326 45,309" fill="#abf9c0" />
+                      <polygon points="45,309 76,326 76,362 45,345" fill="#4d8f55" />
+                      <polygon points="107,309 76,326 76,362 107,345" fill="#2e6039" />
+                      <g opacity=".28" fill="#effff2">
+                        <rect x="55" y="318" width="6" height="4" />
+                        <rect x="83" y="329" width="5" height="5" />
+                      </g>
+                    </g>
+                    <g class="hero-mini mini-two">
+                      <polygon points="448,258 472,271 448,284 424,271" fill="#ffe2a0" />
+                      <polygon points="424,271 448,284 448,312 424,299" fill="#a87b37" />
+                      <polygon points="472,271 448,284 448,312 472,299" fill="#7d5827" />
+                    </g>
+                    <g class="hero-terrain">
+                      <ellipse cx="260" cy="432" rx="236" ry="52" fill="url(#heroHorizon)" />
+                      <path d="M0 454h60v-15h31v-19h35v27h42v-12h39v-25h28v18h45v-8h33v16h30v-26h36v-11h47v31h33v14h31v-22h35v22h48v30H0Z" fill="#091711" />
+                      <path d="M0 454h520v74H0Z" fill="url(#heroTerrain)" />
+                      <path d="M0 453.5h520" stroke="#59dea0" stroke-opacity=".2" />
+                      <path d="m0 512 70-42 52 13 64-25 74 16 55-18 55 15 46-26 70 22 44 32" fill="none" stroke="#2e9c6c" stroke-opacity=".12" />
+                      <path d="M0 496h520M102 454v74M204 454v74M308 454v74M412 454v74" stroke="#8af5b9" stroke-opacity=".055" />
+                    </g>
+                  </svg>
+                  <span class="art-spark spark-a"></span>
+                  <span class="art-spark spark-b"></span>
+                  <span class="art-spark spark-c"></span>
+                </div>
+              </article>
+
+              <div class="stat-grid">
+                <article class="card stat-card">
+                  <div class="stat-head">
+                    <span class="stat-label">Profile</span>
+                    <button class="mini-link" id="accountManageBtn">Manage</button>
+                  </div>
+                  <div class="stat-main">
+                    <span class="avatar avatar-lg" id="playAvatar">P</span>
+                    <div class="stat-copy">
+                      <strong id="playAccountName">Player</strong>
+                      <span id="playAccountType">Offline profile</span>
+                    </div>
+                  </div>
+                  <p class="stat-note" id="playAccountNote">Local profile. Online servers need a Microsoft account.</p>
+                </article>
+
+                <article class="card stat-card">
+                  <div class="stat-head">
+                    <span class="stat-label">Java runtime</span>
+                    <button class="mini-link" id="javaSettingsBtn">Settings</button>
+                  </div>
+                  <div class="stat-main">
+                    <span class="java-mark" aria-hidden="true">J</span>
+                    <div class="stat-copy">
+                      <strong id="javaSummary">Scanning runtimes…</strong>
+                      <span id="javaDetail">Looking for a compatible Java</span>
+                    </div>
+                  </div>
+                  <p class="stat-note" id="javaNote">Eclipse Client picks a compatible runtime automatically.</p>
+                </article>
+
+                <article class="card stat-card">
+                  <div class="stat-head">
+                    <span class="stat-label">Game files</span>
+                    <button class="mini-link" id="openGameFolderBtn">Open</button>
+                  </div>
+                  <div class="stat-main">
+                    <span class="fold-mark" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+                    </span>
+                    <div class="stat-copy">
+                      <strong id="filesSummary">No files yet</strong>
+                      <span id="filesPath" class="path-snippet">—</span>
+                    </div>
+                  </div>
+                  <p class="stat-note">Worlds, assets, and screenshots stay on this PC.</p>
+                </article>
+              </div>
+
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Fresh from Mojang</p>
+                  <h3>Latest releases</h3>
+                </div>
+                <button class="link-arrow" data-page="versions">Browse everything <span aria-hidden="true">→</span></button>
+              </div>
+              <div class="recent-grid" id="recentVersions">
+                <div class="recent-card skeleton"></div>
+                <div class="recent-card skeleton"></div>
+                <div class="recent-card skeleton"></div>
+                <div class="recent-card skeleton"></div>
+              </div>
+            </section>
+
+            <section class="page" id="page-versions" data-page-panel="versions">
+              <header class="page-header">
+                <div>
+                  <p class="eyebrow">Library</p>
+                  <h1>Version library</h1>
+                  <p class="subtitle">Official Minecraft builds and isolated Fabric, Forge, and NeoForge modpacks.</p>
+                </div>
+                <div class="header-actions">
+                  <button class="btn btn-quiet btn-sm" type="button" data-import-mrpack>Import .mrpack</button>
+                  <button class="btn btn-primary btn-sm" type="button" id="createModpackBtn">Create modpack</button>
+                  <button class="btn btn-quiet btn-sm" id="refreshVersionsBtn">
+                    <svg class="refresh-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 8.2A5.8 5.8 0 1 0 16 12m-.5-3.8V4.6m0 3.6h-3.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                    <span>Refresh</span>
+                  </button>
+                </div>
+              </header>
+
+              <section class="modpack-shelf" id="modpackShelf" hidden>
+                <div class="shelf-heading">
+                  <div>
+                    <p class="eyebrow">Your builds</p>
+                    <h3>Modpacks</h3>
+                  </div>
+                  <span class="result-count" id="modpackCount">0 modpacks</span>
+                </div>
+                <div class="modpack-grid" id="modpackGrid"></div>
+              </section>
+
+              <div class="toolbar card">
+                <label class="search-field">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="m13 13 3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                  <input id="versionSearch" type="search" placeholder="Search versions…" autocomplete="off" spellcheck="false" />
+                </label>
+                <div class="segmented" id="versionFilters" role="group" aria-label="Filter versions">
+                  <button data-filter="release" class="active">Releases</button>
+                  <button data-filter="snapshot">Snapshots</button>
+                  <button data-filter="all">All</button>
+                </div>
+                <span class="result-count" id="versionCount">—</span>
+              </div>
+
+              <div class="catalog card">
+                <div class="catalog-head">
+                  <span>Version</span>
+                  <span>Type</span>
+                  <span>Released</span>
+                  <span class="right">Status</span>
+                </div>
+                <div class="catalog-body" id="versionList">
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                </div>
+                <div class="catalog-foot" id="versionFooter" hidden></div>
+              </div>
+            </section>
+
+            <section class="page" id="page-modrinth" data-page-panel="modrinth">
+              <header class="page-header">
+                <div>
+                  <p class="eyebrow">Modrinth workshop</p>
+                  <h1>Content studio</h1>
+                  <p class="subtitle">Build or import a modpack, then add mods, resource packs, and shaders to its own game folder.</p>
+                </div>
+                <div class="header-actions">
+                  <button class="btn btn-quiet btn-sm" type="button" data-import-mrpack>Import .mrpack</button>
+                  <button class="btn btn-primary btn-sm" type="button" data-create-modpack>Create modpack</button>
+                </div>
+              </header>
+
+              <div class="content-target card" id="contentTargetBar">
+                <span class="target-mark" id="contentTargetMark">+</span>
+                <div class="target-copy">
+                  <span class="eyebrow">Building into</span>
+                  <select id="contentTarget" aria-label="Target modpack" disabled>
+                    <option>No modpacks yet</option>
+                  </select>
+                  <p class="target-meta" id="contentTargetMeta">Create a modpack to start adding content.</p>
+                </div>
+                <div class="target-stats" id="contentTargetStats"></div>
+                <div class="target-actions">
+                  <button class="btn btn-quiet btn-sm" type="button" id="contentOpenFolder" disabled>Open folder</button>
+                  <button class="btn btn-quiet btn-sm danger-quiet" type="button" id="contentDeletePack" disabled>Delete pack</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-page="versions">Version library</button>
+                </div>
+              </div>
+
+              <div class="essentials-card card" id="essentialsCard" hidden>
+                <div class="essentials-intro">
+                  <span class="essentials-mark" aria-hidden="true">E</span>
+                  <div>
+                    <p class="eyebrow">Eclipse extras</p>
+                    <h3>Essentials <span class="badge badge-soft" id="essentialsBadge">Recommended</span></h3>
+                    <p class="essentials-lede">Eclipse HUD, custom title and loading art, armor durability, low fire, smaller totem pops, freelook, and more client-side quality-of-life, matched to this pack's loader and Minecraft version.</p>
+                  </div>
+                </div>
+                <div class="essentials-control">
+                  <label class="switch-row essentials-switch">
+                    <span id="essentialsToggleLabel">Enabled for this pack</span>
+                    <input type="checkbox" id="essentialsToggle" />
+                    <span class="switch"></span>
+                  </label>
+                  <button class="btn btn-quiet btn-sm" id="essentialsApply" type="button" hidden>Install now</button>
+                </div>
+                <div class="essentials-features" id="essentialsFeatures"></div>
+                <p class="essentials-note" id="essentialsNote">Checking installed extras…</p>
+              </div>
+
+              <div class="render-card card" id="renderCard" hidden>
+                <div class="render-intro">
+                  <span class="render-mark" aria-hidden="true">R</span>
+                  <div>
+                    <p class="eyebrow">Per-entity rendering</p>
+                    <h3>Render distances <span class="badge badge-soft" id="renderSupportBadge">Fabric</span></h3>
+                    <p class="render-lede">Set how far item frames (including glowing frames), players, dropped items, and armor stands render. Leave a field blank to use the vanilla default.</p>
+                  </div>
+                </div>
+                <div class="render-grid" id="renderFields">
+                  <label class="render-field">
+                    <span>Item frames</span>
+                    <span class="render-input"><input id="renderItemFrames" type="number" min="0" max="512" step="1" inputmode="numeric" placeholder="Default" aria-label="Item frame render distance in blocks" /><span>blocks</span></span>
+                  </label>
+                  <label class="render-field">
+                    <span>Players</span>
+                    <span class="render-input"><input id="renderPlayers" type="number" min="0" max="512" step="1" inputmode="numeric" placeholder="Default" aria-label="Player render distance in blocks" /><span>blocks</span></span>
+                  </label>
+                  <label class="render-field">
+                    <span>Dropped items</span>
+                    <span class="render-input"><input id="renderDroppedItems" type="number" min="0" max="512" step="1" inputmode="numeric" placeholder="Default" aria-label="Dropped item render distance in blocks" /><span>blocks</span></span>
+                  </label>
+                  <label class="render-field">
+                    <span>Armor stands</span>
+                    <span class="render-input"><input id="renderArmorStands" type="number" min="0" max="512" step="1" inputmode="numeric" placeholder="Default" aria-label="Armor stand render distance in blocks" /><span>blocks</span></span>
+                  </label>
+                </div>
+                <div class="render-actions">
+                  <p class="render-note" id="renderNote">Choose a distance for each entity type.</p>
+                  <button class="btn btn-quiet btn-sm" id="renderReset" type="button">Use defaults</button>
+                  <button class="btn btn-primary btn-sm" id="renderApply" type="button">Save &amp; apply</button>
+                </div>
+              </div>
+
+              <div class="content-layout">
+                <div class="content-browser">
+                  <div class="toolbar card content-toolbar">
+                    <label class="search-field">
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="m13 13 3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                      <input id="modrinthSearch" type="search" placeholder="Search Modrinth mods…" autocomplete="off" spellcheck="false" />
+                    </label>
+                    <div class="segmented" id="contentTabs" role="group" aria-label="Modrinth content type">
+                      <button type="button" data-content-tab="mod" class="active">Mods</button>
+                      <button type="button" data-content-tab="resourcepack">Resource packs</button>
+                      <button type="button" data-content-tab="shader">Shaders</button>
+                    </div>
+                    <span class="result-count" id="modrinthCount">—</span>
+                    <label class="content-page-size" title="Results loaded at a time">
+                      <span>Show</span>
+                      <select id="modrinthPageSize" aria-label="Modrinth results per load">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="content-grid" id="modrinthResults">
+                    <div class="mod-card skeleton"></div>
+                    <div class="mod-card skeleton"></div>
+                    <div class="mod-card skeleton"></div>
+                    <div class="mod-card skeleton"></div>
+                  </div>
+                  <div class="content-foot" id="modrinthFooter" hidden></div>
+                </div>
+
+                <aside class="content-side card">
+                  <div class="card-heading">
+                    <div>
+                      <p class="eyebrow">This pack</p>
+                      <h3>Installed content</h3>
+                    </div>
+                    <span class="content-count" id="installedContentCount">0</span>
+                  </div>
+                  <div class="installed-content" id="installedContentList">
+                    <div class="content-empty">Create a modpack, then add your first mod.</div>
+                  </div>
+                  <p class="card-note">Mods and resource packs are placed in this modpack's game folder. Shaders need Iris or OptiFine installed as a mod.</p>
+                </aside>
+              </div>
+            </section>
+
+            <section class="page" id="page-settings" data-page-panel="settings">
+              <header class="page-header">
+                <div>
+                  <p class="eyebrow">Control room</p>
+                  <h1>Settings</h1>
+                  <p class="subtitle">Tune the launcher. Changes save themselves.</p>
+                </div>
+                <span class="save-state" id="saveState"><span></span>Saved locally</span>
+              </header>
+
+              <div class="settings-grid">
+                <article class="card settings-card wide">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Appearance</h3>
+                      <p>Pick the atmosphere for your workshop. Changes apply instantly.</p>
+                    </div>
+                    <span class="theme-current"><span id="themeCurrent">Eclipse</span></span>
+                  </div>
+                  <div class="theme-grid" id="themeGrid" role="group" aria-label="Launcher theme">
+                    <button class="theme-option selected" type="button" data-theme-choice="eclipse" aria-pressed="true">
+                      <span class="theme-preview" data-theme-preview="eclipse" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Eclipse</strong><small>Emerald dusk</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="aurora" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="aurora" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Aurora</strong><small>Polar violet</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="ember" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="ember" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Ember</strong><small>Warm dusk</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="daylight" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="daylight" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Daylight</strong><small>Paper &amp; pine</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="midnight" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="midnight" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Midnight</strong><small>Deep cyan</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="frost" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="frost" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Frost</strong><small>Glacier calm</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="sakura" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="sakura" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Sakura</strong><small>Blossom light</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="solar" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="solar" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Solar</strong><small>Warm parchment</small></span>
+                    </button>
+                  </div>
+                </article>
+
+                <article class="card settings-card wide">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Player profile</h3>
+                      <p>The identity used in singleplayer and on LAN.</p>
+                    </div>
+                    <button class="mini-link" id="settingsAccountsBtn">Manage accounts</button>
+                  </div>
+                  <div class="profile-row">
+                    <span class="avatar avatar-md" id="settingsAvatar">P</span>
+                    <div class="profile-copy">
+                      <strong id="settingsProfileName">Player</strong>
+                      <span id="settingsProfileType">Offline profile</span>
+                    </div>
+                    <span class="badge badge-soft" id="settingsProfileBadge">Offline</span>
+                    <button class="btn btn-quiet btn-sm" id="settingsSignIn">Sign in with Microsoft</button>
+                  </div>
+                  <label class="field">
+                    <span>Offline username</span>
+                    <input id="usernameInput" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="3–16 letters, numbers, or underscores" />
+                    <small id="usernameHint">Changing this updates the local profile UUID.</small>
+                  </label>
+                </article>
+
+                <article class="card settings-card wide">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Java runtime</h3>
+                      <p>Eclipse Client matches each version with a compatible runtime.</p>
+                    </div>
+                    <button class="mini-link" id="rescanJavaBtn">Rescan</button>
+                  </div>
+                  <div class="java-options" id="javaOptions">
+                    <div class="java-option skeleton-option"></div>
+                    <div class="java-option skeleton-option"></div>
+                  </div>
+                  <div class="java-custom">
+                    <input id="customJavaPath" type="text" readonly placeholder="Automatic selection" />
+                    <button class="btn btn-quiet btn-sm" id="browseJavaBtn">Browse</button>
+                    <button class="btn btn-quiet btn-sm" id="clearJavaBtn">Auto</button>
+                  </div>
+                  <p class="card-note" id="javaSettingsNote">Looking for installed Java runtimes…</p>
+                </article>
+
+                <article class="card settings-card">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Memory</h3>
+                      <p>How much RAM Minecraft may use.</p>
+                    </div>
+                    <strong class="range-value" id="memoryValue">4.0 GB</strong>
+                  </div>
+                  <input class="range" id="memoryRange" type="range" min="1024" max="16384" step="512" value="4096" />
+                  <div class="range-scale"><span>1 GB</span><span>8 GB</span><span>16 GB</span></div>
+                  <p class="card-note">Leave room for Windows, browsers, and everything else.</p>
+                </article>
+
+                <article class="card settings-card">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Window size</h3>
+                      <p>Open the game at a fixed resolution.</p>
+                    </div>
+                  </div>
+                  <label class="switch-row">
+                    <span>Force custom resolution</span>
+                    <input type="checkbox" id="resolutionToggle" />
+                    <span class="switch" aria-hidden="true"></span>
+                  </label>
+                  <div class="resolution-row" id="resolutionFields">
+                    <label class="field">
+                      <span>Width</span>
+                      <input id="resolutionWidth" type="number" min="320" max="7680" step="1" value="1280" />
+                    </label>
+                    <span class="resolution-x">×</span>
+                    <label class="field">
+                      <span>Height</span>
+                      <input id="resolutionHeight" type="number" min="320" max="7680" step="1" value="720" />
+                    </label>
+                  </div>
+                </article>
+
+                <article class="card settings-card wide">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Game directory</h3>
+                      <p>Where worlds, screenshots, and options live.</p>
+                    </div>
+                    <button class="mini-link" id="openSettingsGameFolder">Open folder</button>
+                  </div>
+                  <div class="path-field">
+                    <input id="gameDirInput" type="text" readonly />
+                    <button class="btn btn-quiet btn-sm" id="browseGameDir">Change</button>
+                    <button class="btn btn-quiet btn-sm" id="resetGameDir">Default</button>
+                  </div>
+                  <p class="card-note" id="gameDirNote"></p>
+                </article>
+
+                <article class="card settings-card">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Behavior</h3>
+                      <p>A couple of quality-of-life touches.</p>
+                    </div>
+                  </div>
+                  <label class="switch-row">
+                    <span>Minimize launcher after launch</span>
+                    <input type="checkbox" id="minimizeToggle" />
+                    <span class="switch" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch-row">
+                    <span>Fast launch checks</span>
+                    <input type="checkbox" id="fastLaunchToggle" checked />
+                    <span class="switch" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch-row">
+                    <span>Tuned JVM flags</span>
+                    <input type="checkbox" id="performanceJvmToggle" checked />
+                    <span class="switch" aria-hidden="true"></span>
+                  </label>
+                  <p class="card-note">Fast launch trusts already-installed files. Turn it off to deep-verify every library before each launch. Tuned flags enable G1GC settings for smoother play.</p>
+                  <div class="about-lines">
+                    <span>Launcher version</span>
+                    <strong id="aboutVersion">Eclipse Client 1.1.0</strong>
+                  </div>
+                  <div class="about-lines">
+                    <span>Launcher data</span>
+                    <button class="path-link" id="openDataFolder">Open folder</button>
+                  </div>
+                </article>
+
+                <article class="card settings-card wide" id="updatesCard">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Launcher updates</h3>
+                      <p>Eclipse Client updates itself from signed GitHub Releases.</p>
+                    </div>
+                    <span class="badge badge-soft" id="updateBadge">v1.1.0</span>
+                  </div>
+                  <div class="update-row">
+                    <div class="update-copy">
+                      <strong id="updateStatus">Update check runs automatically on launch.</strong>
+                      <span id="updateDetail">You're running Eclipse Client 1.1.0.</span>
+                    </div>
+                    <div class="update-actions">
+                      <button type="button" class="btn btn-quiet btn-sm" id="checkUpdatesBtn">Check now</button>
+                      <button type="button" class="btn btn-primary btn-sm" id="installUpdateBtn" hidden>Update now</button>
+                    </div>
+                  </div>
+                  <div class="progress-track" id="updateProgress" hidden><div class="progress-fill" id="updateProgressFill"></div></div>
+                  <p class="card-note" id="updateNote">Updates are signed and verified before installation.</p>
+                </article>
+
+                <article class="card settings-card wide">
+                  <div class="card-heading">
+                    <div>
+                      <h3>Discord Rich Presence</h3>
+                      <p>Show Eclipse Client on your Discord profile while you play.</p>
+                    </div>
+                    <button class="mini-link" id="openDiscordPortal">Get an Application ID</button>
+                  </div>
+                  <label class="switch-row">
+                    <span>Show my Eclipse activity in Discord</span>
+                    <input type="checkbox" id="discordRpcToggle" checked />
+                    <span class="switch" aria-hidden="true"></span>
+                  </label>
+                  <div class="field discord-id-field">
+                    <span>Discord Application ID</span>
+                    <div class="path-field">
+                      <input id="discordClientIdInput" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="Paste your Discord app's Client ID" />
+                      <button type="button" class="btn btn-quiet btn-sm" id="saveDiscordClientId">Save</button>
+                    </div>
+                  </div>
+                  <p class="card-note">Create a Discord application named <strong>Eclipse Client</strong> and paste its Client ID here. Discord takes the name from the application, so your profile will show Eclipse Client. Eclipse reconnects automatically when Discord starts.</p>
+                </article>
+
+                <article class="card settings-card about-card">
+                  <h3>Eclipse Client</h3>
+                  <p>A custom launcher for vanilla and Fabric, Forge, or NeoForge-modded Minecraft. Not an official Minecraft product and not affiliated with Mojang or Microsoft.</p>
+                  <button class="link-arrow" id="openMinecraftSite">minecraft.net <span aria-hidden="true">→</span></button>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <section class="console" id="console" aria-hidden="true">
+            <div class="console-head">
+              <div class="console-ident">
+                <span class="console-live" id="consoleLive"></span>
+                <span>Console</span>
+                <span class="console-badge">Live output</span>
+              </div>
+              <div class="console-stage" id="consoleStage">Idle</div>
+              <div class="console-actions">
+                <button id="clearConsole">Clear</button>
+                <button id="hideConsole">Hide</button>
+              </div>
+            </div>
+            <div class="console-progress" id="consoleProgress" hidden>
+              <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+              <div class="progress-meta">
+                <span id="progressLabel">Preparing…</span>
+                <span id="progressDetail"></span>
+              </div>
+            </div>
+            <div class="console-body" id="consoleBody">
+              <div class="console-empty">Launcher and game output will appear here.</div>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <footer class="statusbar">
+        <button class="status-button" id="statusConsoleBtn" title="Toggle console">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Ready</span>
+        </button>
+        <div class="status-meta">
+          <span id="statusVersion">No version selected</span>
+          <span class="status-sep"></span>
+          <span id="statusJava">Java: scanning…</span>
+          <span class="status-sep"></span>
+          <span id="appVersion">v1.1.0</span>
+        </div>
+      </footer>
+    </div>
+
+    <div class="modal-backdrop" id="accountsModal" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="accountsTitle">
+        <header class="modal-head">
+          <div>
+            <p class="eyebrow">Identity</p>
+            <h2 id="accountsTitle">Player accounts</h2>
+            <p>Offline profiles stay local. Microsoft accounts can play online.</p>
+          </div>
+          <button class="icon-btn" id="closeAccounts" aria-label="Close accounts">
+            <svg viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+          </button>
+        </header>
+
+        <div class="account-list" id="accountList"></div>
+
+        <div class="modal-divider"><span>Add a profile</span></div>
+        <form class="offline-form" id="offlineForm">
+          <input id="offlineName" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Username (3–16 characters)" />
+          <button type="submit" class="btn btn-primary btn-sm" id="addOfflineBtn">Add offline</button>
+        </form>
+        <div class="modal-error" id="accountError" role="alert" hidden></div>
+
+        <div class="microsoft-block">
+          <div>
+            <strong>Microsoft account</strong>
+            <p>Play on online servers with your Minecraft: Java Edition account.</p>
+          </div>
+          <button class="btn btn-ms btn-sm" id="microsoftBtn">
+            <svg class="ms-logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" /><rect x="13" y="3" width="8" height="8" /><rect x="3" y="13" width="8" height="8" /><rect x="13" y="13" width="8" height="8" /></svg>
+            <span>Sign in</span>
+          </button>
+        </div>
+        <p class="modal-note">Offline profiles can play singleplayer and LAN, but cannot join online-mode servers. Microsoft sign-in opens a secure window and stores only an encrypted refresh token.</p>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modpackModal" aria-hidden="true">
+      <div class="modal modal-compact" role="dialog" aria-modal="true" aria-labelledby="modpackModalTitle">
+        <header class="modal-head">
+          <div>
+            <p class="eyebrow">New build</p>
+            <h2 id="modpackModalTitle">Create a modpack</h2>
+            <p>A version with its own game folder, powered by Fabric, Forge, or NeoForge.</p>
+          </div>
+          <button class="icon-btn" id="closeModpackModal" aria-label="Close modpack creator">
+            <svg viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+          </button>
+        </header>
+
+        <form id="modpackForm">
+          <label class="field">
+            <span>Modpack name</span>
+            <input id="modpackName" type="text" maxlength="48" autocomplete="off" spellcheck="false" placeholder="My Eclipse Pack" required />
+            <small>2–48 characters. This name appears in your version library.</small>
+          </label>
+          <div class="form-grid">
+            <label class="field">
+              <span>Minecraft version</span>
+              <select id="modpackGameVersion" required></select>
+            </label>
+            <label class="field">
+              <span>Mod loader</span>
+              <select id="modpackLoader">
+                <option value="fabric">Fabric</option>
+                <option value="forge">Forge</option>
+                <option value="neoforge">NeoForge</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>Loader version</span>
+            <select id="modpackLoaderVersion" disabled><option>Checking loader…</option></select>
+            <small id="modpackLoaderNote">Loader versions come directly from the official loader source.</small>
+          </label>
+          <p class="card-note">This creates an isolated game directory for this pack. Minecraft files are downloaded the first time you launch it.</p>
+          <div class="modal-error" id="modpackError" role="alert" hidden></div>
+          <div class="modal-actions">
+            <button class="btn btn-quiet" type="button" id="cancelModpack">Cancel</button>
+            <button class="btn btn-primary" type="submit" id="createModpackSubmit">Create modpack</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
+
+    <script src="tauri-bridge.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

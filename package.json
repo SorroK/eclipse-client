@@ -1,0 +1,21 @@
+{
+  "name": "eclipse-client",
+  "productName": "Eclipse Client",
+  "version": "1.1.0",
+  "description": "Eclipse Client — a Rust and Tauri Minecraft launcher with Fabric, Forge, and NeoForge modpacks, .mrpack imports, and Modrinth content.",
+  "author": "Eclipse Client",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "tauri dev",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dist": "tauri build",
+    "tauri": "tauri",
+    "test": "node test/run-tests.js"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "adm-zip": "^0.6.1"
+  }
+}
