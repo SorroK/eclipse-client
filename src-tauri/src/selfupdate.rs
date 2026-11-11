@@ -311,6 +311,37 @@ mod tests {
     }
 
     #[test]
+    fn swaps_the_executable_and_restores_it_when_the_move_fails() {
+        let directory = std::env::temp_dir().join(format!(
+            "eclipse-selfupdate-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let _ = std::fs::remove_dir_all(&directory);
+        std::fs::create_dir_all(&directory).expect("temp directory");
+
+        let live = directory.join("eclipse-client.exe");
+        let staged = staged_path(&live).expect("staged path");
+        assert_eq!(staged.file_name().unwrap(), "eclipse-client.exe.new");
+        std::fs::write(&live, b"old build").expect("old build");
+        std::fs::write(&staged, b"new build").expect("new build");
+
+        swap_in_place(&live, &staged).expect("swap should succeed");
+        assert_eq!(std::fs::read(&live).unwrap(), b"new build");
+        assert_eq!(
+            std::fs::read(directory.join("eclipse-client.exe.old")).unwrap(),
+            b"old build"
+        );
+        assert!(!staged.exists());
+
+        let missing = directory.join("eclipse-client.exe.new");
+        assert!(swap_in_place(&live, &missing).is_err());
+        assert_eq!(std::fs::read(&live).unwrap(), b"new build");
+
+        let _ = std::fs::remove_dir_all(&directory);
+    }
+
+    #[test]
     fn compares_release_versions() {
         assert_eq!(
             crate::loaders::compare_versions("1.1.1", "1.1.0"),
