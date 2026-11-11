@@ -1,7 +1,7 @@
 {
   "name": "eclipse-client",
   "productName": "Eclipse Client",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Eclipse Client — a Rust and Tauri Minecraft launcher with Fabric, Forge, and NeoForge modpacks, .mrpack imports, and Modrinth content.",
   "author": "Eclipse Client",
   "private": true,

@@ -3,9 +3,13 @@
   "id": "eclipse-hud",
   "version": "${version}",
   "name": "Eclipse HUD",
-  "description": "Eclipse Client's own compact client HUD with FPS, coordinates, biome, dimension, and a real clock.",
+  "description": "Eclipse Client's own compact client HUD with FPS, coordinates, biome, dimension, a real clock, depth-reprojection motion blur, and an owo-lib themed ping and blur control center. Press Right Shift to open it.",
   "authors": [
     "Eclipse Client"
+  ],
+  "contributors": [
+    "Jahleel (Smooth Motion Blur technique)",
+    "ItsPasi (Natural Motion Blur technique)"
   ],
   "license": "MIT",
   "icon": "assets/eclipse-hud/icon.png",
@@ -15,10 +19,14 @@
       "com.eclipseclient.hud.EclipseHudClient"
     ]
   },
+  "mixins": [
+    "eclipse-hud.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21.11",
     "java": ">=21",
-    "fabric-api": ">=0.141.0"
+    "fabric-api": ">=0.141.0",
+    "owo": ">=0.13.0"
   }
 }

@@ -51,6 +51,9 @@
       create: (payload) => call('modpack:create', payload),
       import: () => call('modpack:import'),
       remove: (versionId) => call('modpack:remove', versionId),
+      installModrinth: (payload) => call('modpack:install-modrinth', payload),
+      rename: (payload) => call('modpack:rename', payload),
+      duplicate: (versionId) => call('modpack:duplicate', versionId),
       list: () => call('modpack:list'),
       loaderVersions: (loader, gameVersion) =>
         call('modpack:loader-versions', { loader, gameVersion }),
@@ -58,6 +61,7 @@
     },
     content: {
       search: (payload) => call('modrinth:search', payload),
+      searchModpacks: (payload) => call('modrinth:search-modpacks', payload),
       list: (versionId) => call('content:list', versionId),
       install: (payload) => call('content:install', payload),
       remove: (payload) => call('content:remove', payload),

@@ -1,0 +1,15 @@
+Eclipse HUD's motion blur implementation is a port of the velocity
+reprojection technique from Smooth Motion Blur by Jahleel:
+
+  https://github.com/realjahleel/smooth-motion-blur
+
+which in turn adapts Natural Motion Blur by ItsPasi:
+
+  https://github.com/ItsPasi/natural-motionblur-fabric
+
+Those projects are licensed under the GNU Lesser General Public License,
+version 3 only (LGPL-3.0-only). The ported motion blur source files and
+shader in this mod are distributed under the same license. The complete
+license text is included in LICENSE-LGPL-3.0.txt.
+
+The rest of Eclipse HUD remains under the MIT license.

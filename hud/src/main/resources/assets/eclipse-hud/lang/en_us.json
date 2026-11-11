@@ -1,0 +1,20 @@
+{
+  "key.category.eclipse-hud.main": "Eclipse HUD",
+  "key.eclipse-hud.open_settings": "Open Eclipse control center",
+  "screen.eclipse-hud.settings": "Eclipse HUD Settings",
+  "screen.eclipse-hud.enabled": "HUD: %s",
+  "screen.eclipse-hud.position": "Position: %s",
+  "screen.eclipse-hud.position.top_left": "Top left",
+  "screen.eclipse-hud.position.top_right": "Top right",
+  "screen.eclipse-hud.position.bottom_left": "Bottom left",
+  "screen.eclipse-hud.position.bottom_right": "Bottom right",
+  "screen.eclipse-hud.fps": "FPS: %s",
+  "screen.eclipse-hud.coordinates": "Coordinates: %s",
+  "screen.eclipse-hud.biome": "Biome: %s",
+  "screen.eclipse-hud.dimension": "Dimension: %s",
+  "screen.eclipse-hud.clock": "Clock: %s",
+  "screen.eclipse-hud.motion_blur": "Motion Blur: %s",
+  "screen.eclipse-hud.on": "On",
+  "screen.eclipse-hud.off": "Off",
+  "screen.eclipse-hud.hint": "Changes save automatically"
+}

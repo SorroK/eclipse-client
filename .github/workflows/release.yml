@@ -33,20 +33,47 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build and publish signed release
+      - name: Build and publish release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Eclipse Client ${{ github.ref_name }}"
           releaseBody: |
-            Signed Windows installer and updater artifacts for Eclipse Client ${{ github.ref_name }}.
-            Existing installations can update from Settings → Launcher updates.
+            Windows installer for new installs and the signed auto-update build for Eclipse Client ${{ github.ref_name }}.
+            Installed launchers update themselves from Settings → Launcher updates.
           releaseDraft: false
           prerelease: false
-          includeUpdaterJson: true
-          updaterJsonPreferNsis: true
+          includeUpdaterJson: false
           args: ""
+
+      - name: Sign the launcher executable
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          $exe = "src-tauri/target/release/eclipse-client.exe"
+          $key = $env:TAURI_SIGNING_PRIVATE_KEY
+          if (-not $key) { throw "TAURI_SIGNING_PRIVATE_KEY is not set; releases must be signed." }
+          $keyPath = $key
+          if (-not (Test-Path $key)) {
+            $keyPath = Join-Path $env:RUNNER_TEMP "updater.key"
+            Set-Content -Path $keyPath -Value $key -NoNewline -Encoding utf8
+          }
+          npx tauri signer sign -f $keyPath $exe
+          Remove-Item -Force $keyPath -ErrorAction SilentlyContinue
+          $signature = (Get-Content "$exe.sig" -Raw).Trim()
+          $sha256 = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $manifest = [ordered]@{
+            version   = $version
+            url       = "https://github.com/SorroK/eclipse-client/releases/download/${{ github.ref_name }}/eclipse-client.exe"
+            signature = $signature
+            sha256    = $sha256
+            notes     = "Eclipse Client ${{ github.ref_name }} updates in place: the launcher downloads this build, verifies its signature, swaps itself, and reopens."
+          } | ConvertTo-Json
+          Set-Content -Path "latest-exe.json" -Value $manifest -Encoding utf8
+          gh release upload "${{ github.ref_name }}" $exe "$exe.sig" latest-exe.json --clobber

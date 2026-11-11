@@ -447,6 +447,7 @@ pub fn build_command(
     if !jvm.iter().any(|value| value.starts_with("-Dminecraft.launcher.version=")) {
         jvm.push(format!("-Dminecraft.launcher.version={launcher_version}"));
     }
+    jvm.push(format!("-Declipse.theme={}", settings.theme));
     let mut game = if meta.pointer("/arguments/game").and_then(Value::as_array).is_some_and(|items| !items.is_empty()) {
         expand_arguments(meta.pointer("/arguments/game"), &features)
     } else {

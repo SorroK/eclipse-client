@@ -190,6 +190,167 @@ pub async fn create_modpack(runtime: &Arc<Runtime>, input: Value) -> Result<Valu
     result
 }
 
+fn instance_base_version(runtime: &Runtime, id: &str, fallback: &str) -> String {
+    let path = runtime.modpack_game_dir(id).join("instance.json");
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+        .and_then(|value| value.get("baseVersion").and_then(Value::as_str).map(str::to_string))
+        .unwrap_or_else(|| fallback.to_string())
+}
+
+fn rename_version_metadata(runtime: &Runtime, id: &str, name: &str) -> Result<(), String> {
+    let path = runtime.paths.version_json(id)?;
+    if !path.exists() {
+        return Ok(());
+    }
+    let raw = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut value: Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
+    if let Some(object) = value.as_object_mut() {
+        object.insert("name".into(), json!(name));
+    }
+    fs::write(&path, serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())
+}
+
+fn duplicate_version_metadata(
+    runtime: &Runtime,
+    source_id: &str,
+    new_id: &str,
+    name: &str,
+) -> Result<(), String> {
+    let source = runtime.paths.version_json(source_id)?;
+    let raw = fs::read_to_string(&source).map_err(|e| e.to_string())?;
+    let mut value: Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
+    if let Some(object) = value.as_object_mut() {
+        object.insert("id".into(), json!(new_id));
+        object.insert("versionId".into(), json!(new_id));
+        object.insert("name".into(), json!(name));
+    }
+    let directory = runtime.paths.version_dir(new_id)?;
+    let stale = directory.join(format!("{source_id}.json"));
+    let _ = fs::remove_file(&stale);
+    fs::write(
+        directory.join(format!("{new_id}.json")),
+        serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
+}
+
+pub fn rename_modpack(runtime: &Arc<Runtime>, input: Value) -> Result<Value, String> {
+    let id = validate_version_id(input.get("id").and_then(Value::as_str).unwrap_or(""))?;
+    let name = clean_name(input.get("name").and_then(Value::as_str).unwrap_or(""));
+    if name.chars().count() < 2 || name.chars().count() > 48 {
+        return Err("Modpack names must be between 2 and 48 characters.".into());
+    }
+    let instance = runtime.require_modpack(&id)?;
+    if instance.name == name {
+        return Ok(json!({
+            "instance": public_instance(runtime, &instance),
+            "modpacks": runtime.modpack_list()
+        }));
+    }
+    let updated = ModpackRecord { name: name.clone(), ..instance.clone() };
+    let base_version = instance_base_version(runtime, &id, &instance.game_version);
+    write_instance(&updated, runtime, &base_version)?;
+    rename_version_metadata(runtime, &id, &name)?;
+    {
+        let mut state = runtime.state();
+        if let Some(row) = state.modpacks.iter_mut().find(|row| row.id == id) {
+            row.name = name.clone();
+        }
+    }
+    runtime.save_modpacks()?;
+    runtime.log("launcher", "info", &format!("Renamed modpack \"{}\" to \"{name}\".", instance.name));
+    let modpacks = runtime.modpack_list();
+    runtime.emit("modpacks:updated", modpacks.clone());
+    Ok(json!({
+        "instance": public_instance(runtime, &updated),
+        "modpacks": modpacks
+    }))
+}
+
+fn copy_folder(from: &Path, to: &Path) -> Result<(), String> {
+    fs::create_dir_all(to).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(from).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let file_type = entry.file_type().map_err(|e| e.to_string())?;
+        let destination = to.join(entry.file_name());
+        if file_type.is_dir() {
+            copy_folder(&entry.path(), &destination)?;
+        } else if file_type.is_file() {
+            fs::copy(entry.path(), &destination).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+fn duplicate_pack_blocking(
+    runtime: Arc<Runtime>,
+    instance: ModpackRecord,
+    source_id: String,
+    new_id: String,
+    name: String,
+) -> Result<Value, String> {
+    let source_game_dir = runtime.modpack_game_dir(&source_id);
+    let source_version_dir = runtime.paths.version_dir(&source_id)?;
+    let new_game_dir = runtime.modpack_game_dir(&new_id);
+    let new_version_dir = runtime.paths.version_dir(&new_id)?;
+    let base_version = instance_base_version(&runtime, &source_id, &instance.game_version);
+    let duplicate = ModpackRecord {
+        id: new_id.clone(),
+        name: name.clone(),
+        created_at: iso_now(),
+        source: json!({ "type": "duplicate", "from": source_id.clone() }),
+        ..instance
+    };
+    let result = (|| -> Result<(), String> {
+        if source_game_dir.exists() {
+            copy_folder(&source_game_dir, &new_game_dir)?;
+        } else {
+            fs::create_dir_all(&new_game_dir).map_err(|e| e.to_string())?;
+        }
+        copy_folder(&source_version_dir, &new_version_dir)?;
+        duplicate_version_metadata(&runtime, &source_id, &new_id, &name)?;
+        write_instance(&duplicate, &runtime, &base_version)?;
+        runtime.state().modpacks.push(duplicate.clone());
+        runtime.save_modpacks()?;
+        Ok(())
+    })();
+    if let Err(error) = result {
+        let _ = fs::remove_dir_all(&new_game_dir);
+        let _ = fs::remove_dir_all(&new_version_dir);
+        runtime.state().modpacks.retain(|row| row.id != new_id);
+        let _ = runtime.save_modpacks();
+        return Err(error);
+    }
+    runtime.log("launcher", "info", &format!("Duplicated modpack \"{}\" as \"{name}\" ({new_id}).", duplicate.name));
+    let modpacks = runtime.modpack_list();
+    runtime.emit("modpacks:updated", modpacks.clone());
+    Ok(json!({
+        "instance": public_instance(&runtime, &duplicate),
+        "modpacks": modpacks
+    }))
+}
+
+pub async fn duplicate_modpack(runtime: &Arc<Runtime>, version_id: &str) -> Result<Value, String> {
+    let id = validate_version_id(version_id)?;
+    let instance = runtime.require_modpack(&id)?;
+    let suffix = " copy";
+    let stem = instance
+        .name
+        .chars()
+        .take(48 - suffix.chars().count())
+        .collect::<String>();
+    let name = format!("{}{suffix}", stem.trim_end());
+    let name = if name.chars().count() < 2 { "Modpack copy".to_string() } else { name };
+    let new_id = next_id(runtime, &name, &instance.game_version)?;
+    let runtime = runtime.clone();
+    tokio::task::spawn_blocking(move || duplicate_pack_blocking(runtime, instance, id, new_id, name))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 pub async fn list_loader_versions(runtime: &Arc<Runtime>, loader: &str, game_version: &str) -> Result<Value, String> {
     let list = loaders::fetch_loader_versions(runtime, loader, game_version).await?;
     serde_json::to_value(list).map_err(|e| e.to_string())
@@ -602,6 +763,17 @@ fn parse_mrpack_index(raw: &Value) -> Result<Pack, String> {
 }
 
 pub async fn import_mrpack(runtime: &Arc<Runtime>, file_path: &Path) -> Result<Value, String> {
+    import_mrpack_with_source(runtime, file_path, None).await
+}
+
+/// Import an .mrpack the launcher downloaded itself, such as a Modrinth
+/// modpack. `source` replaces the default `mrpack` origin recorded on the new
+/// pack, so the library can tell where a pack came from.
+pub async fn import_mrpack_with_source(
+    runtime: &Arc<Runtime>,
+    file_path: &Path,
+    source: Option<Value>,
+) -> Result<Value, String> {
     if file_path.extension().and_then(|value| value.to_str()).unwrap_or("").to_lowercase() != "mrpack" {
         return Err("Choose a Modrinth .mrpack file.".into());
     }
@@ -662,12 +834,12 @@ pub async fn import_mrpack(runtime: &Arc<Runtime>, file_path: &Path) -> Result<V
         "gameVersion": pack.game_version,
         "loader": pack.loader,
         "loaderVersion": pack.loader_version,
-        "source": {
+        "source": source.unwrap_or_else(|| json!({
             "type": "mrpack",
             "fileName": file_path.file_name().and_then(|value| value.to_str()).unwrap_or(""),
             "packVersion": pack.version_id,
             "importedAt": iso_now()
-        }
+        }))
     })).await?;
     let instance_id = created.get("id").and_then(Value::as_str).unwrap_or("").to_string();
     let instance = runtime.require_modpack(&instance_id)?;
@@ -779,6 +951,111 @@ pub async fn import_mrpack(runtime: &Arc<Runtime>, file_path: &Path) -> Result<V
         runtime.log("launcher", "warn", &format!("Import failed; removed the incomplete \"{pack_name}\" pack."));
         emit(runtime, json!({ "phase": "error", "label": "Import failed", "percent": 0, "indeterminate": false }));
     }
+    result
+}
+
+/// Install a Modrinth modpack project as a new Eclipse modpack. Modrinth ships
+/// packs as `.mrpack` files, so the file is downloaded and handed to the normal
+/// import path; the resulting pack gets versions, loader, overrides, and mods
+/// exactly like a manual import.
+pub async fn install_modrinth_modpack(
+    runtime: &Arc<Runtime>,
+    input: Value,
+) -> Result<Value, String> {
+    if runtime.state().game.is_some() {
+        return Err("Close Minecraft before installing a modpack.".into());
+    }
+    let project_ref = input
+        .get("projectId")
+        .and_then(Value::as_str)
+        .or_else(|| input.get("slug").and_then(Value::as_str))
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if project_ref.is_empty() {
+        return Err("Choose a modpack to install.".into());
+    }
+    let project = modrinth::fetch_project(runtime, &project_ref).await?;
+    if project.project_type != "modpack" {
+        return Err("That Modrinth project is not a modpack.".into());
+    }
+    let versions = modrinth::fetch_versions(runtime, &project.id, "", "").await?;
+    let requested = input
+        .get("versionId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let chosen = if requested.is_empty() {
+        modrinth::pick_best(&versions)
+    } else {
+        versions.iter().find(|version| version.id == requested).cloned()
+    };
+    let Some(chosen) = chosen else {
+        return Err(if requested.is_empty() {
+            format!("{} has no downloadable versions yet.", project.title)
+        } else {
+            "That modpack version is no longer available.".into()
+        });
+    };
+    if !chosen.file_name.to_lowercase().ends_with(".mrpack") {
+        return Err(format!(
+            "{} does not publish a Modrinth modpack file.",
+            project.title
+        ));
+    }
+    let url = modrinth::trusted_download(&chosen.url)?;
+    let directory = runtime.data_root.join("cache").join("modpacks");
+    tokio::fs::create_dir_all(&directory)
+        .await
+        .map_err(|e| e.to_string())?;
+    let file_name = safe_file_name(&chosen.file_name, "pack.mrpack");
+    let destination = safe_join(&directory, &file_name)?;
+    emit(
+        runtime,
+        json!({
+            "phase": "download",
+            "label": format!("Downloading {}…", project.title),
+            "percent": 2,
+            "indeterminate": true
+        }),
+    );
+    runtime.log(
+        "launcher",
+        "info",
+        &format!(
+            "Downloading Modrinth modpack \"{}\" ({})…",
+            project.title, chosen.version_number
+        ),
+    );
+    let download = download_file(
+        &runtime.http,
+        &url,
+        &destination,
+        if chosen.sha1.is_empty() { None } else { Some(&chosen.sha1) },
+        None,
+        if chosen.file_size > 0 { Some(chosen.file_size) } else { None },
+    )
+    .await;
+    if let Err(error) = download {
+        let _ = tokio::fs::remove_file(&destination).await;
+        return Err(format!("Could not download {}: {error}", project.title));
+    }
+    let result = import_mrpack_with_source(
+        runtime,
+        &destination,
+        Some(json!({
+            "type": "modrinth",
+            "projectId": project.id,
+            "projectSlug": project.slug,
+            "projectTitle": project.title,
+            "versionId": chosen.id,
+            "versionNumber": chosen.version_number,
+            "importedAt": iso_now()
+        })),
+    )
+    .await;
+    let _ = tokio::fs::remove_file(&destination).await;
     result
 }
 

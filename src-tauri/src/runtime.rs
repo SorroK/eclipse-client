@@ -376,7 +376,10 @@ impl Runtime {
             next.modrinth_page_size = value;
         }
         if let Some(value) = object.get("theme").and_then(Value::as_str) {
-            if !matches!(value, "eclipse" | "aurora" | "ember" | "daylight") {
+            if !matches!(
+                value,
+                "eclipse" | "aurora" | "ember" | "daylight" | "midnight" | "frost" | "sakura" | "solar"
+            ) {
                 return Err("Unknown launcher theme.".into());
             }
             next.theme = value.into();

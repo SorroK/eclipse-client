@@ -72,6 +72,18 @@
               </span>
               <span>Versions</span>
             </button>
+            <button class="nav-item" data-page="modpacks" title="Modpacks">
+              <span class="nav-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 6.4h10a1.6 1.6 0 0 1 1.6 1.6v7.6a1.4 1.4 0 0 1-1.4 1.4H4.8a1.4 1.4 0 0 1-1.4-1.4V8A1.6 1.6 0 0 1 5 6.4Z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" /><path d="M7.2 6.4V5a2.8 2.8 0 0 1 5.6 0v1.4M3.7 11.2h12.6" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" /></svg>
+              </span>
+              <span>Modpacks</span>
+            </button>
+            <button class="nav-item" data-page="manager" title="Modpack Manager">
+              <span class="nav-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12M4 10h12M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" /><circle cx="7.5" cy="5.5" r="1.5" fill="currentColor" /><circle cx="12.5" cy="10" r="1.5" fill="currentColor" /><circle cx="8.5" cy="14.5" r="1.5" fill="currentColor" /></svg>
+              </span>
+              <span>Modpack Manager</span>
+            </button>
             <button class="nav-item" data-page="modrinth" title="Modrinth">
               <span class="nav-icon">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.9a7.1 7.1 0 1 0 7.1 7.1M10 6.1v7.8M6.1 10h7.8" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" /><path d="M14.6 3.5 17 5.9l-2.4 2.4" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -128,7 +140,7 @@
                     <span>Minecraft</span>
                     <strong id="heroVersion">—</strong>
                   </div>
-                  <h2 class="hero-title">Pyrakits.<br /><em>Is.</em><br />Easy.</h2>
+                  <h2 class="hero-title">Minecraft<br /><em>Launchers</em><br />Reimagined.</h2>
                   <p class="hero-sub" id="heroSub">Pick a version and step into your next world.</p>
                   <div class="hero-actions">
                     <button class="btn btn-primary btn-launch" id="playBtn">
@@ -348,6 +360,118 @@
               </div>
             </section>
 
+            <section class="page" id="page-modpacks" data-page-panel="modpacks">
+              <header class="page-header">
+                <div>
+                  <p class="eyebrow">Your pack base</p>
+                  <h1>Modpacks</h1>
+                  <p class="subtitle">One home for custom builds. Launch a pack, change its mods, or copy it to try something new.</p>
+                </div>
+                <div class="header-actions">
+                  <button class="btn btn-quiet btn-sm" type="button" data-import-mrpack>Import .mrpack</button>
+                  <button class="btn btn-primary btn-sm" type="button" data-create-modpack>Create modpack</button>
+                </div>
+              </header>
+
+              <div class="segmented pack-tabs" id="modpackTabs" role="tablist" aria-label="Modpacks">
+                <button type="button" role="tab" data-modpack-tab="download" aria-selected="true">Download</button>
+                <button type="button" role="tab" data-modpack-tab="manage" aria-selected="false">Manage</button>
+              </div>
+
+              <div class="pack-panel" id="modpackDownloadPanel">
+                <div class="toolbar card pack-toolbar">
+                  <label class="search-field">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="m13 13 3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                    <input id="packBrowserSearch" type="search" placeholder="Search Modrinth modpacks…" autocomplete="off" spellcheck="false" />
+                  </label>
+                  <span class="result-count" id="packBrowserCount">—</span>
+                </div>
+                <div class="content-grid pack-browser-grid" id="packBrowserResults">
+                  <div class="mod-card skeleton"></div>
+                  <div class="mod-card skeleton"></div>
+                  <div class="mod-card skeleton"></div>
+                  <div class="mod-card skeleton"></div>
+                </div>
+                <div class="content-foot" id="packBrowserFooter" hidden></div>
+              </div>
+
+              <div class="pack-layout" id="modpackManagePanel" hidden>
+                <div class="pack-library">
+                  <div class="toolbar card pack-toolbar">
+                    <label class="search-field">
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="m13 13 3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                      <input id="packSearch" type="search" placeholder="Search your packs…" autocomplete="off" spellcheck="false" />
+                    </label>
+                    <div class="segmented" id="packFilters" role="group" aria-label="Filter modpacks">
+                      <button type="button" data-pack-filter="all" class="active">All</button>
+                      <button type="button" data-pack-filter="fabric">Fabric</button>
+                      <button type="button" data-pack-filter="forge">Forge</button>
+                      <button type="button" data-pack-filter="neoforge">NeoForge</button>
+                    </div>
+                    <span class="result-count" id="packCount">0 packs</span>
+                  </div>
+
+                  <div class="pack-grid" id="packGrid">
+                    <div class="pack-card skeleton"></div>
+                    <div class="pack-card skeleton"></div>
+                  </div>
+
+                  <div class="pack-empty-state card" id="packEmpty" hidden>
+                    <span class="pack-empty-mark" aria-hidden="true">+</span>
+                    <h2>Start your pack base</h2>
+                    <p>Create an isolated Fabric, Forge, or NeoForge build, or import a Modrinth .mrpack you already have.</p>
+                    <div class="pack-empty-actions">
+                      <button class="btn btn-primary btn-sm" type="button" data-create-modpack>Create modpack</button>
+                      <button class="btn btn-quiet btn-sm" type="button" data-import-mrpack>Import .mrpack</button>
+                    </div>
+                  </div>
+                </div>
+
+                <aside class="pack-detail card" id="packDetail" aria-live="polite">
+                  <div class="pack-detail-empty">
+                    <span class="pack-detail-mark" aria-hidden="true">+</span>
+                    <strong>Select a pack</strong>
+                    <p>Pick a pack from your library to see its base, jump into its content, or make a copy.</p>
+                  </div>
+                </aside>
+              </div>
+            </section>
+
+            <section class="page" id="page-manager" data-page-panel="manager">
+              <header class="page-header">
+                <div>
+                  <p class="eyebrow">Pack workshop</p>
+                  <h1>Modpack Manager</h1>
+                  <p class="subtitle">Edit a pack's name, jump into its content, duplicate it, or clean it up from one list.</p>
+                </div>
+                <div class="header-actions">
+                  <button class="btn btn-quiet btn-sm" type="button" data-import-mrpack>Import .mrpack</button>
+                  <button class="btn btn-primary btn-sm" type="button" data-create-modpack>Create modpack</button>
+                </div>
+              </header>
+
+              <div class="manager-layout">
+                <div class="manager-list card">
+                  <div class="manager-list-head">
+                    <label class="search-field">
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="m13 13 3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                      <input id="managerSearch" type="search" placeholder="Search your packs…" autocomplete="off" spellcheck="false" />
+                    </label>
+                    <span class="result-count" id="managerCount">0 packs</span>
+                  </div>
+                  <div class="manager-rows" id="managerRows"></div>
+                </div>
+
+                <aside class="manager-editor card" id="managerEditor" aria-live="polite">
+                  <div class="pack-detail-empty">
+                    <span class="pack-detail-mark" aria-hidden="true">+</span>
+                    <strong>Select a pack</strong>
+                    <p>Pick a pack from the list to edit its name or manage its files.</p>
+                  </div>
+                </aside>
+              </div>
+            </section>
+
             <section class="page" id="page-modrinth" data-page-panel="modrinth">
               <header class="page-header">
                 <div>
@@ -543,20 +667,6 @@
                       </span>
                       <span class="theme-option-copy"><strong>Ember</strong><small>Warm dusk</small></span>
                     </button>
-                    <button class="theme-option" type="button" data-theme-choice="daylight" aria-pressed="false">
-                      <span class="theme-preview" data-theme-preview="daylight" aria-hidden="true">
-                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
-                        <span class="theme-preview-main">
-                          <span class="theme-preview-kicker"></span>
-                          <span class="theme-preview-title"></span>
-                          <span class="theme-preview-line"></span>
-                          <span class="theme-preview-button"></span>
-                        </span>
-                        <span class="theme-preview-orb"></span>
-                        <span class="theme-preview-check">✓</span>
-                      </span>
-                      <span class="theme-option-copy"><strong>Daylight</strong><small>Paper &amp; pine</small></span>
-                    </button>
                     <button class="theme-option" type="button" data-theme-choice="midnight" aria-pressed="false">
                       <span class="theme-preview" data-theme-preview="midnight" aria-hidden="true">
                         <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
@@ -570,6 +680,20 @@
                         <span class="theme-preview-check">✓</span>
                       </span>
                       <span class="theme-option-copy"><strong>Midnight</strong><small>Deep cyan</small></span>
+                    </button>
+                    <button class="theme-option" type="button" data-theme-choice="daylight" aria-pressed="false">
+                      <span class="theme-preview" data-theme-preview="daylight" aria-hidden="true">
+                        <span class="theme-preview-side"><span></span><span></span><span></span><span></span></span>
+                        <span class="theme-preview-main">
+                          <span class="theme-preview-kicker"></span>
+                          <span class="theme-preview-title"></span>
+                          <span class="theme-preview-line"></span>
+                          <span class="theme-preview-button"></span>
+                        </span>
+                        <span class="theme-preview-orb"></span>
+                        <span class="theme-preview-check">✓</span>
+                      </span>
+                      <span class="theme-option-copy"><strong>Daylight</strong><small>Paper &amp; pine</small></span>
                     </button>
                     <button class="theme-option" type="button" data-theme-choice="frost" aria-pressed="false">
                       <span class="theme-preview" data-theme-preview="frost" aria-hidden="true">
@@ -739,7 +863,7 @@
                   <p class="card-note">Fast launch trusts already-installed files. Turn it off to deep-verify every library before each launch. Tuned flags enable G1GC settings for smoother play.</p>
                   <div class="about-lines">
                     <span>Launcher version</span>
-                    <strong id="aboutVersion">Eclipse Client 1.1.0</strong>
+                    <strong id="aboutVersion">Eclipse Client 1.1.1</strong>
                   </div>
                   <div class="about-lines">
                     <span>Launcher data</span>
@@ -753,12 +877,12 @@
                       <h3>Launcher updates</h3>
                       <p>Eclipse Client updates itself from signed GitHub Releases.</p>
                     </div>
-                    <span class="badge badge-soft" id="updateBadge">v1.1.0</span>
+                    <span class="badge badge-soft" id="updateBadge">v1.1.1</span>
                   </div>
                   <div class="update-row">
                     <div class="update-copy">
                       <strong id="updateStatus">Update check runs automatically on launch.</strong>
-                      <span id="updateDetail">You're running Eclipse Client 1.1.0.</span>
+                      <span id="updateDetail">You're running Eclipse Client 1.1.1.</span>
                     </div>
                     <div class="update-actions">
                       <button type="button" class="btn btn-quiet btn-sm" id="checkUpdatesBtn">Check now</button>
@@ -766,7 +890,7 @@
                     </div>
                   </div>
                   <div class="progress-track" id="updateProgress" hidden><div class="progress-fill" id="updateProgressFill"></div></div>
-                  <p class="card-note" id="updateNote">Updates are signed and verified before installation.</p>
+                  <p class="card-note" id="updateNote">Updates are signed and verified, then installed silently before Eclipse Client reopens.</p>
                 </article>
 
                 <article class="card settings-card wide">
@@ -838,7 +962,7 @@
           <span class="status-sep"></span>
           <span id="statusJava">Java: scanning…</span>
           <span class="status-sep"></span>
-          <span id="appVersion">v1.1.0</span>
+          <span id="appVersion">v1.1.1</span>
         </div>
       </footer>
     </div>
@@ -922,6 +1046,33 @@
           <div class="modal-actions">
             <button class="btn btn-quiet" type="button" id="cancelModpack">Cancel</button>
             <button class="btn btn-primary" type="submit" id="createModpackSubmit">Create modpack</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="renamePackModal" aria-hidden="true">
+      <div class="modal modal-compact" role="dialog" aria-modal="true" aria-labelledby="renamePackTitle">
+        <header class="modal-head">
+          <div>
+            <p class="eyebrow">Edit pack</p>
+            <h2 id="renamePackTitle">Rename modpack</h2>
+            <p>The name changes everywhere this pack appears. Its files and loader stay the same.</p>
+          </div>
+          <button class="icon-btn" id="closeRenamePack" aria-label="Close rename dialog">
+            <svg viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+          </button>
+        </header>
+        <form id="renamePackForm">
+          <label class="field">
+            <span>Modpack name</span>
+            <input id="renamePackName" type="text" maxlength="48" autocomplete="off" spellcheck="false" required />
+            <small>2–48 characters.</small>
+          </label>
+          <div class="modal-error" id="renamePackError" role="alert" hidden></div>
+          <div class="modal-actions">
+            <button class="btn btn-quiet" type="button" id="cancelRenamePack">Cancel</button>
+            <button class="btn btn-primary" type="submit" id="renamePackSubmit">Save name</button>
           </div>
         </form>
       </div>

@@ -15,8 +15,8 @@ mod paths;
 mod render;
 mod rules;
 mod runtime;
+mod selfupdate;
 mod store;
-mod updates;
 mod util;
 
 use backend::launcher;
@@ -30,8 +30,8 @@ use tauri::{Emitter, Manager, WindowEvent};
 fn main() {
     let smoke_started = Arc::new(AtomicBool::new(false));
     tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            selfupdate::cleanup_stale();
             let runtime = Runtime::new(app.handle().clone())
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
             let test_runtime = runtime.clone();

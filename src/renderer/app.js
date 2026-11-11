@@ -85,6 +85,24 @@ const state = {
   modpackProgress: null,
   importingModpack: false,
   confirmDeletePack: '',
+  packQuery: '',
+  packFilter: 'all',
+  modpackTab: 'download',
+  packBrowserQuery: '',
+  packBrowserResults: [],
+  packBrowserTotal: 0,
+  packBrowserLoading: false,
+  packBrowserLoadingMore: false,
+  packBrowserError: '',
+  packBrowserLoaded: false,
+  installingPackId: '',
+  managerQuery: '',
+  managerError: '',
+  renamingPack: '',
+  renameBusy: false,
+  renameError: '',
+  duplicatingPack: '',
+  confirmDeletePackPage: '',
   java: { detecting: true, installations: [] },
   installing: null,
   game: null,
@@ -127,6 +145,10 @@ let modrinthRequestToken = 0;
 let contentRequestToken = 0;
 let loaderRequestToken = 0;
 let confirmDeleteTimer = null;
+let packDeleteTimer = null;
+let packSearchTimer = null;
+let packBrowserSearchTimer = null;
+let packBrowserRequestToken = 0;
 let toastSequence = 0;
 
 function esc(value) {
@@ -530,6 +552,7 @@ function bindApiEvents() {
     renderSidebar();
     renderPlay();
     renderVersions();
+    renderModpacksPage();
     renderModrinth();
   });
 
@@ -537,6 +560,7 @@ function bindApiEvents() {
     setModpacks(modpacks);
     ensureContentTarget();
     renderVersions();
+    renderModpacksPage();
     renderPlay();
     renderModrinth();
     updatePageTitle();
@@ -742,6 +766,12 @@ function bindStaticEvents() {
     if (event.target === $('#modpackModal')) closeModpackModal();
   });
   $('#modpackForm').addEventListener('submit', handleCreateModpack);
+  $('#renamePackForm').addEventListener('submit', handleRenamePackSubmit);
+  $('#closeRenamePack').addEventListener('click', closeRenamePackModal);
+  $('#cancelRenamePack').addEventListener('click', closeRenamePackModal);
+  $('#renamePackModal').addEventListener('click', (event) => {
+    if (event.target === $('#renamePackModal')) closeRenamePackModal();
+  });
   $('#modpackGameVersion').addEventListener('change', loadModpackLoaderVersions);
   $('#modpackLoader').addEventListener('change', (event) => {
     state.modpackLoader = event.target.value;
@@ -757,6 +787,77 @@ function bindStaticEvents() {
     if (!card) return;
     event.preventDefault();
     selectVersion(card.dataset.modpackId);
+  });
+
+  $('#packGrid').addEventListener('click', handlePackGridClick);
+  $('#packGrid').addEventListener('keydown', handlePackGridKeydown);
+  $('#modpackTabs').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-modpack-tab]');
+    if (button) setModpackTab(button.dataset.modpackTab);
+  });
+  $('#packBrowserSearch').addEventListener('input', (event) => {
+    const value = event.target.value;
+    clearTimeout(packBrowserSearchTimer);
+    packBrowserSearchTimer = setTimeout(() => {
+      state.packBrowserQuery = value.trim();
+      state.packBrowserResults = [];
+      state.packBrowserTotal = 0;
+      state.packBrowserError = '';
+      state.packBrowserLoaded = false;
+      packBrowserRequestToken += 1;
+      searchModpacks(false);
+    }, 280);
+  });
+  $('#packBrowserResults').addEventListener('click', (event) => {
+    if (event.target.closest('[data-retry-pack-browser]')) {
+      searchModpacks(false);
+      return;
+    }
+    const button = event.target.closest('[data-install-pack]');
+    if (button) installModrinthModpack(button);
+  });
+  $('#packBrowserFooter').addEventListener('click', (event) => {
+    if (event.target.closest('[data-load-more-packs]')) searchModpacks(true);
+  });
+  $('#packDetail').addEventListener('click', handlePackDetailClick);
+  $('#managerRows').addEventListener('click', (event) => {
+    const row = event.target.closest('[data-manager-pack-id]');
+    if (!row) return;
+    state.managerError = '';
+    selectVersion(row.dataset.managerPackId);
+  });
+  $('#managerSearch').addEventListener('input', (event) => {
+    state.managerQuery = event.target.value.trim();
+    renderManagerPage();
+  });
+  $('#managerEditor').addEventListener('click', (event) => {
+    if (event.target.closest('#managerNameSave')) {
+      saveManagerName();
+      return;
+    }
+    handlePackDetailClick(event);
+  });
+  $('#managerEditor').addEventListener('keydown', (event) => {
+    if (event.target.id !== 'managerNameInput' || event.key !== 'Enter') return;
+    event.preventDefault();
+    saveManagerName();
+  });
+  $('#packSearch').addEventListener('input', (event) => {
+    const value = event.target.value;
+    clearTimeout(packSearchTimer);
+    packSearchTimer = setTimeout(() => {
+      state.packQuery = value.trim();
+      renderModpacksPage();
+    }, 110);
+  });
+  $('#packFilters').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-pack-filter]');
+    if (!button) return;
+    state.packFilter = button.dataset.packFilter;
+    $$('#packFilters button').forEach((entry) =>
+      entry.classList.toggle('active', entry === button),
+    );
+    renderModpacksPage();
   });
 
   $('#contentTarget').addEventListener('change', handleContentTargetChange);
@@ -921,7 +1022,7 @@ function bindSettingsEvents() {
 /* ------------------------------------------------------------------ */
 
 function navigate(page) {
-  const valid = new Set(['play', 'versions', 'modrinth', 'settings']);
+  const valid = new Set(['play', 'versions', 'modpacks', 'manager', 'modrinth', 'settings']);
   state.page = valid.has(page) ? page : 'play';
 
   $$('.nav-item').forEach((button) =>
@@ -933,6 +1034,13 @@ function navigate(page) {
   $('#pages').scrollTop = 0;
 
   if (state.page === 'versions') renderVersions();
+  if (state.page === 'modpacks') {
+    renderModpacksPage();
+    if (state.modpackTab === 'download' && !state.packBrowserLoaded && !state.packBrowserLoading) {
+      searchModpacks(false);
+    }
+  }
+  if (state.page === 'manager') renderManagerPage();
   if (state.page === 'modrinth') {
     ensureContentTarget();
     renderModrinth();
@@ -995,19 +1103,19 @@ function formatUpdateSize(bytes) {
 
 function renderUpdateCard() {
   const update = state.update;
-  const current = update.currentVersion || state.system.appVersion || '1.1.0';
+  const current = update.currentVersion || state.system.appVersion || '1.1.1';
   setText('#updateBadge', `v${current}`);
 
   let title = 'Update check runs automatically on launch.';
   let detail = `You're running Eclipse Client ${current}.`;
 
   if (update.installing) {
-    title = update.status === 'installed' ? 'Update installed.' : 'Downloading and installing…';
+    title = update.status === 'installed' ? 'Update installed.' : 'Downloading the new launcher…';
     detail = update.status === 'installed'
-      ? 'Relaunch Eclipse Client if the installer does not reopen it.'
+      ? 'Relaunch Eclipse Client if it does not reopen on its own.'
       : update.total
-        ? `${formatUpdateSize(update.downloaded)} of ${formatUpdateSize(update.total)} downloaded. Eclipse Client will restart when it finishes.`
-        : 'Eclipse Client will close and reopen when the update is ready.';
+        ? `${formatUpdateSize(update.downloaded)} of ${formatUpdateSize(update.total)} downloaded. Eclipse Client will verify it, swap itself, and reopen.`
+        : 'Eclipse Client will verify the download, swap itself in place, and reopen automatically.';
   } else if (update.checking) {
     title = 'Checking for updates…';
     detail = 'Looking for the newest signed release on GitHub.';
@@ -1019,7 +1127,7 @@ function renderUpdateCard() {
     const notes = String(update.available.notes || '').trim();
     detail = notes
       ? notes.split('\n').filter(Boolean).slice(0, 2).join(' ')
-      : `You're running ${current}. The update downloads and installs in place.`;
+      : `You're running ${current}. The update downloads, verifies its signature, and swaps the launcher in place.`;
   } else if (update.status === 'current') {
     title = 'You are up to date.';
     detail = `Eclipse Client ${current} is the newest release.`;
@@ -1098,7 +1206,7 @@ async function installUpdate() {
     await api.updates.install();
     state.update.available = null;
     state.update.status = 'installed';
-    toast('Update installed. Eclipse Client will restart.', 'success', 7000);
+    toast('Update installed. Eclipse Client is restarting.', 'success', 7000);
   } catch (error) {
     state.update.status = 'error';
     state.update.error = cleanError(error);
@@ -1821,6 +1929,7 @@ async function selectVersion(versionId) {
   const token = (settingsSaveToken += 1);
   state.settings.selectedVersion = versionId;
   state.confirmDeletePack = '';
+  state.managerError = '';
   if (state.modpacks.has(versionId)) {
     state.contentTarget = versionId;
     state.content = [];
@@ -1841,6 +1950,7 @@ async function selectVersion(versionId) {
 function workbenchSelectionChanged() {
   renderPlay();
   renderVersions();
+  renderModpacksPage();
   renderStatus();
 }
 
@@ -1966,6 +2076,795 @@ function handleModpackShelfClick(event) {
   }
   const card = event.target.closest('[data-modpack-id]');
   if (card) selectVersion(card.dataset.modpackId);
+}
+
+function packIsRunning(instance) {
+  return Boolean(
+    state.game &&
+      ['starting', 'running'].includes(state.game.status) &&
+      state.game.versionId === instance.id,
+  );
+}
+
+function packBusy() {
+  return Boolean(
+    state.importingModpack ||
+      state.modpackCreating ||
+      state.duplicatingPack ||
+      state.renameBusy ||
+      state.installingPackId ||
+      state.installing ||
+      state.launching,
+  );
+}
+
+function managerPackId() {
+  const configured = state.settings.selectedVersion;
+  if (state.modpacks.has(configured)) return configured;
+  const records = Array.from(state.modpacks.values()).sort((left, right) =>
+    String(left.name || '').localeCompare(String(right.name || '')),
+  );
+  return records[0]?.id || '';
+}
+
+function renderManagerPage() {
+  const rows = $('#managerRows');
+  const editor = $('#managerEditor');
+  if (!rows || !editor) return;
+
+  const records = Array.from(state.modpacks.values()).sort((left, right) =>
+    String(left.name || '').localeCompare(String(right.name || '')),
+  );
+  const query = state.managerQuery.toLowerCase();
+  const filtered = records.filter((instance) => {
+    if (!query) return true;
+    return `${instance.name} ${instance.gameVersion} ${loaderLabel(instance.loader)} ${instance.loaderVersion}`
+      .toLowerCase()
+      .includes(query);
+  });
+
+  setText('#managerCount', `${filtered.length} pack${filtered.length === 1 ? '' : 's'}`);
+
+  if (!records.length) {
+    rows.innerHTML =
+      '<div class="manager-empty">No packs yet. Create or import one to start managing it.</div>';
+    editor.innerHTML = `
+      <div class="pack-detail-empty">
+        <span class="pack-detail-mark" aria-hidden="true">+</span>
+        <strong>No packs to manage</strong>
+        <p>Create a pack or import an .mrpack, then come back here to edit it.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const activeId = managerPackId();
+  rows.innerHTML = filtered.length
+    ? filtered
+        .map((instance) => {
+          const ready = state.installed.has(instance.id);
+          const running = packIsRunning(instance);
+          const stateLabel = running ? 'Running' : ready ? 'Ready' : 'Not installed';
+          return `
+            <button class="manager-row ${instance.id === activeId ? 'selected' : ''}" type="button" data-manager-pack-id="${esc(instance.id)}" title="Edit ${esc(instance.name)}">
+              <span class="pack-mark" aria-hidden="true">${esc(loaderMark(instance.loader))}</span>
+              <span class="manager-row-copy">
+                <strong>${esc(instance.name)}</strong>
+                <span>Minecraft ${esc(instance.gameVersion)} · ${esc(loaderLabel(instance.loader))} ${esc(instance.loaderVersion)}</span>
+              </span>
+              <span class="manager-row-state ${ready || running ? '' : 'dim'}">${stateLabel}</span>
+            </button>
+          `;
+        })
+        .join('')
+    : '<div class="manager-empty">No matching packs. Try a different search.</div>';
+
+  renderManagerEditor(records.find((instance) => instance.id === activeId) || records[0]);
+}
+
+function renderManagerEditor(instance) {
+  const editor = $('#managerEditor');
+  if (!editor) return;
+  if (!instance) {
+    editor.innerHTML = `
+      <div class="pack-detail-empty">
+        <span class="pack-detail-mark" aria-hidden="true">+</span>
+        <strong>Select a pack</strong>
+        <p>Pick a pack from the list to edit its name or manage its files.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const ready = state.installed.has(instance.id);
+  const running = packIsRunning(instance);
+  const busy = packBusy();
+  const duplicating = state.duplicatingPack === instance.id;
+  const confirming = state.confirmDeletePackPage === instance.id;
+  const folderName = String(instance.gameDir || '').split(/[\\/]/).pop() || instance.id;
+  const stateLabel = running ? 'Running' : ready ? 'Installed' : 'Downloads on first launch';
+
+  editor.innerHTML = `
+    <div class="pack-detail-head">
+      <span class="pack-detail-mark" aria-hidden="true">${esc(loaderMark(instance.loader))}</span>
+      <div class="pack-detail-copy">
+        <p class="eyebrow">Editing pack</p>
+        <h2>${esc(instance.name)}</h2>
+        <span>Minecraft ${esc(instance.gameVersion)} · ${esc(loaderLabel(instance.loader))} ${esc(instance.loaderVersion)}</span>
+      </div>
+    </div>
+    <div class="pack-detail-badges">
+      <span class="badge ${ready ? 'badge-soft' : ''}">${esc(stateLabel)}</span>
+      <span class="badge">${instance.essentialsEnabled ? 'Essentials on' : 'Essentials off'}</span>
+    </div>
+    <div class="manager-name">
+      <label class="field" for="managerNameInput">
+        <span>Pack name</span>
+        <div class="manager-name-row">
+          <input id="managerNameInput" type="text" maxlength="48" value="${esc(instance.name)}" autocomplete="off" spellcheck="false" ${busy ? 'disabled' : ''} />
+          <button class="btn btn-primary btn-sm" type="button" id="managerNameSave" ${busy ? 'disabled' : ''}>Save name</button>
+        </div>
+        <small>2–48 characters. Renaming doesn't move files.</small>
+      </label>
+      <div class="modal-error" id="managerError" role="alert" ${state.managerError ? '' : 'hidden'}>${esc(state.managerError || '')}</div>
+    </div>
+    <div class="pack-facts">
+      <div class="pack-fact"><span>Minecraft</span><strong>${esc(instance.gameVersion)}</strong></div>
+      <div class="pack-fact"><span>Loader</span><strong>${esc(loaderLabel(instance.loader))} ${esc(instance.loaderVersion)}</strong></div>
+      <div class="pack-fact"><span>Folder</span><strong class="pack-path" title="${esc(instance.gameDir)}">${esc(folderName)}</strong></div>
+    </div>
+    <div class="pack-detail-actions">
+      <button class="btn btn-primary btn-sm pack-play" type="button" data-pack-action="play" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>${running ? (state.stopping ? 'Stopping…' : 'Stop game') : 'Play pack'}</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="content" data-pack-id="${esc(instance.id)}">Content</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="folder" data-pack-id="${esc(instance.id)}">Open folder</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="duplicate" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>${duplicating ? 'Copying…' : 'Duplicate'}</button>
+      <button class="btn btn-quiet btn-sm danger-quiet ${confirming ? 'confirm' : ''}" type="button" data-pack-action="delete" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>${confirming ? 'Confirm delete' : 'Delete'}</button>
+    </div>
+    <p class="card-note pack-detail-note">Renaming only changes the label. Duplicate copies this pack's mods, configs, and worlds into a new instance.</p>
+  `;
+}
+
+/* ------------------------------------------------------------------ */
+/* Modpack download tab                                                */
+/* ------------------------------------------------------------------ */
+
+const MODPACK_TABS = new Set(['download', 'manage']);
+
+function renderModpackTabs() {
+  const tab = MODPACK_TABS.has(state.modpackTab) ? state.modpackTab : 'download';
+  $$('#modpackTabs [data-modpack-tab]').forEach((button) => {
+    const active = button.dataset.modpackTab === tab;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+  const downloadPanel = $('#modpackDownloadPanel');
+  if (downloadPanel) downloadPanel.hidden = tab !== 'download';
+  const managePanel = $('#modpackManagePanel');
+  if (managePanel) managePanel.hidden = tab !== 'manage';
+}
+
+function setModpackTab(tab) {
+  const next = MODPACK_TABS.has(tab) ? tab : 'download';
+  if (state.modpackTab === next) return;
+  state.modpackTab = next;
+  renderModpacksPage();
+  if (next === 'download' && !state.packBrowserLoaded && !state.packBrowserLoading) {
+    searchModpacks(false);
+  }
+}
+
+// Packs installed straight from Modrinth remember their project, so the
+// browser can mark them instead of offering a second copy.
+function installedModrinthProjects() {
+  const ids = new Set();
+  state.modpacks.forEach((instance) => {
+    if (!instance.source || instance.source.type !== 'modrinth') return;
+    const projectId = String(instance.source.projectId || '');
+    if (projectId) ids.add(projectId);
+  });
+  return ids;
+}
+
+function renderPackBrowser() {
+  const container = $('#packBrowserResults');
+  const footer = $('#packBrowserFooter');
+  const count = $('#packBrowserCount');
+  if (!container || !footer || !count) return;
+
+  const searchInput = $('#packBrowserSearch');
+  if (searchInput && document.activeElement !== searchInput && searchInput.value !== state.packBrowserQuery) {
+    searchInput.value = state.packBrowserQuery;
+  }
+
+  count.textContent = state.packBrowserLoading && !state.packBrowserResults.length
+    ? 'Loading…'
+    : state.packBrowserError
+      ? 'Offline'
+      : state.packBrowserLoaded
+        ? `${state.packBrowserTotal.toLocaleString()} pack${state.packBrowserTotal === 1 ? '' : 's'}`
+        : '—';
+
+  if (state.modpackTab === 'manage') return;
+
+  if (state.packBrowserLoading && !state.packBrowserResults.length) {
+    footer.hidden = true;
+    container.innerHTML = Array.from({ length: 4 }, () => '<div class="mod-card skeleton"></div>').join('');
+    return;
+  }
+
+  if (state.packBrowserError) {
+    footer.hidden = true;
+    container.innerHTML = `
+      <div class="content-state">
+        <strong>Modrinth is unreachable</strong>
+        <p>${esc(state.packBrowserError)}</p>
+        <button class="btn btn-quiet btn-sm" type="button" data-retry-pack-browser>Try again</button>
+      </div>
+    `;
+    return;
+  }
+
+  if (!state.packBrowserResults.length) {
+    footer.hidden = true;
+    container.innerHTML = `
+      <div class="content-state">
+        <strong>No modpacks found</strong>
+        <p>Try another search, or switch to Manage to import an .mrpack you already have.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const inLibrary = installedModrinthProjects();
+  const busy = packBusy();
+  container.innerHTML = state.packBrowserResults
+    .map((project) => {
+      const already = inLibrary.has(project.id);
+      const installing = state.installingPackId === project.id;
+      const tags = (project.categories || [])
+        .filter((category) => !['fabric', 'quilt', 'neoforge', 'forge', 'minecraft'].includes(category))
+        .slice(0, 3);
+      const icon = project.iconUrl
+        ? `<img src="${esc(project.iconUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`
+        : `<span>${esc((project.title || '?').slice(0, 1).toUpperCase())}</span>`;
+      const action = already
+        ? '<span class="state-pill installed">In library</span>'
+        : `<button class="content-add" type="button" data-install-pack="${esc(project.id)}" ${installing || busy ? 'disabled' : ''}>${installing ? 'Installing…' : 'Install'}</button>`;
+      return `
+        <article class="mod-card">
+          <div class="mod-card-head">
+            <span class="mod-icon">${icon}</span>
+            <span class="mod-title">
+              <strong>${esc(project.title)}</strong>
+              <span>by ${esc(project.author || 'Unknown author')}</span>
+            </span>
+            <span class="mod-downloads" title="Downloads">↓ ${formatCount(project.downloads)}</span>
+          </div>
+          <p class="mod-desc">${esc(project.description)}</p>
+          <div class="mod-foot">
+            <span class="mod-tags">${tags.map((tag) => `<span class="mod-tag">${esc(tag.replace(/-/g, ' '))}</span>`).join('')}</span>
+            ${action}
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+
+  const hasMore = state.packBrowserResults.length < state.packBrowserTotal;
+  footer.hidden = !hasMore;
+  footer.innerHTML = hasMore
+    ? `<button class="btn btn-quiet btn-sm" type="button" data-load-more-packs ${state.packBrowserLoadingMore ? 'disabled' : ''}>${state.packBrowserLoadingMore ? 'Loading…' : `Load more (${state.packBrowserResults.length} of ${state.packBrowserTotal.toLocaleString()})`}</button>`
+    : '';
+}
+
+async function searchModpacks(append) {
+  if (state.packBrowserLoading || state.packBrowserLoadingMore) return;
+  const token = (packBrowserRequestToken += 1);
+  const offset = append ? state.packBrowserResults.length : 0;
+  state.packBrowserLoading = !append;
+  state.packBrowserLoadingMore = append;
+  state.packBrowserError = '';
+  if (!append) state.packBrowserLoaded = false;
+  renderPackBrowser();
+  try {
+    const result = await api.content.searchModpacks({
+      query: state.packBrowserQuery,
+      offset,
+    });
+    if (token !== packBrowserRequestToken) return;
+    const hits = Array.isArray(result.hits) ? result.hits : [];
+    state.packBrowserResults = append ? [...state.packBrowserResults, ...hits] : hits;
+    state.packBrowserTotal = Number(result.totalHits) || state.packBrowserResults.length;
+    state.packBrowserLoaded = true;
+  } catch (error) {
+    if (token !== packBrowserRequestToken) return;
+    state.packBrowserError = cleanError(error);
+    state.packBrowserLoaded = true;
+  } finally {
+    if (token === packBrowserRequestToken) {
+      state.packBrowserLoading = false;
+      state.packBrowserLoadingMore = false;
+      renderPackBrowser();
+    }
+  }
+}
+
+async function installModrinthModpack(button) {
+  const projectId = button.dataset.installPack;
+  const project = state.packBrowserResults.find((entry) => entry.id === projectId);
+  if (!project || state.installingPackId) return;
+  if (state.game) {
+    toast('Close Minecraft before installing a modpack.', 'warn');
+    return;
+  }
+
+  state.installingPackId = projectId;
+  state.modpackProgress = {
+    phase: 'download',
+    label: `Installing ${project.title}…`,
+    percent: 0,
+    indeterminate: true,
+  };
+  renderPackBrowser();
+  renderStatus();
+  try {
+    const result = await api.modpacks.installModrinth({ projectId });
+    setModpacks(result.modpacks);
+    const instance = result.instance;
+    if (instance) {
+      state.contentTarget = instance.id;
+      state.content = [];
+      state.contentLoadedFor = '';
+      state.essentials = null;
+      state.essentialsLoadedFor = '';
+      state.render = null;
+      state.renderLoadedFor = '';
+      state.modrinthResults = [];
+      state.modrinthTotal = 0;
+      state.modrinthError = '';
+      state.modrinthLoaded = false;
+      state.modrinthQuery = '';
+      await selectVersion(instance.id);
+      state.modpackTab = 'manage';
+    }
+    renderAll();
+    toast(
+      `${project.title} installed${instance ? ` as ${instance.name}` : ''}${result.importedFiles ? ` with ${result.importedFiles} files` : ''}. Open Manage to launch it.`,
+      'success',
+      7000,
+    );
+  } catch (error) {
+    toast(cleanError(error), 'error', 8000);
+  } finally {
+    state.installingPackId = '';
+    state.modpackProgress = null;
+    renderModpacksPage();
+    renderPlay();
+    renderVersions();
+    renderStatus();
+  }
+}
+
+function renderModpacksPage() {
+  renderModpackTabs();
+  renderPackBrowser();
+  renderManagerPage();
+  const grid = $('#packGrid');
+  const empty = $('#packEmpty');
+  if (!grid) return;
+
+  const query = state.packQuery.toLowerCase();
+  const records = Array.from(state.modpacks.values()).sort((left, right) =>
+    String(left.name || '').localeCompare(String(right.name || '')),
+  );
+  const filtered = records.filter((instance) => {
+    if (state.packFilter !== 'all' && instance.loader !== state.packFilter) return false;
+    if (!query) return true;
+    return `${instance.name} ${instance.gameVersion} ${loaderLabel(instance.loader)} ${instance.loaderVersion}`
+      .toLowerCase()
+      .includes(query);
+  });
+
+  setText('#packCount', `${filtered.length} pack${filtered.length === 1 ? '' : 's'}`);
+  if (empty) empty.hidden = records.length > 0;
+  grid.hidden = records.length === 0;
+
+  if (!records.length) {
+    grid.innerHTML = '';
+    renderPackDetail(null);
+    return;
+  }
+
+  const selected = selectedVersionId();
+  const busy = packBusy();
+  grid.classList.toggle('is-busy', busy);
+
+  if (!filtered.length) {
+    grid.innerHTML = `
+      <div class="pack-empty-inline">
+        <strong>No matching packs</strong>
+        <p>Try a different name or loader filter.</p>
+      </div>
+    `;
+  } else {
+    grid.innerHTML = filtered
+      .map((instance) => {
+        const isSelected = instance.id === selected;
+        const running = packIsRunning(instance);
+        const ready = state.installed.has(instance.id);
+        const duplicating = state.duplicatingPack === instance.id;
+        const stateLabel = duplicating
+          ? 'Copying…'
+          : running
+            ? 'Running'
+            : ready
+              ? 'Ready to launch'
+              : 'Downloads on first launch';
+        return `
+          <article class="pack-card ${isSelected ? 'selected' : ''} ${duplicating ? 'busy' : ''}" data-pack-id="${esc(instance.id)}" tabindex="0" role="button" aria-pressed="${isSelected}" title="Select ${esc(instance.name)}">
+            <div class="pack-card-head">
+              <span class="pack-mark" aria-hidden="true">${esc(loaderMark(instance.loader))}</span>
+              <span class="pack-card-copy">
+                <strong>${esc(instance.name)}</strong>
+                <span>Minecraft ${esc(instance.gameVersion)} · ${esc(loaderLabel(instance.loader))} ${esc(instance.loaderVersion)}</span>
+              </span>
+              ${isSelected ? '<span class="pack-active">Active</span>' : ''}
+            </div>
+            <div class="pack-card-foot">
+              <span class="pack-status ${ready || running ? '' : 'dim'}"><span class="pack-status-dot" aria-hidden="true"></span>${esc(stateLabel)}</span>
+              <span class="pack-manage" aria-hidden="true">Manage →</span>
+            </div>
+          </article>
+        `;
+      })
+      .join('');
+  }
+
+  renderPackDetail(records.find((instance) => instance.id === selected) || null);
+}
+
+function renderPackDetail(instance) {
+  const panel = $('#packDetail');
+  if (!panel) return;
+  if (!instance) {
+    panel.innerHTML = `
+      <div class="pack-detail-empty">
+        <span class="pack-detail-mark" aria-hidden="true">+</span>
+        <strong>Select a pack</strong>
+        <p>Pick a pack from your library to see its base, jump into its content, or make a copy.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const selected = selectedVersionId() === instance.id;
+  const ready = state.installed.has(instance.id);
+  const running = packIsRunning(instance);
+  const busy = packBusy();
+  const duplicating = state.duplicatingPack === instance.id;
+  const confirming = state.confirmDeletePackPage === instance.id;
+  const stateLabel = running ? 'Running' : ready ? 'Installed' : 'Downloads on first launch';
+  const folderName = String(instance.gameDir || '').split(/[\\/]/).pop() || instance.id;
+
+  panel.innerHTML = `
+    <div class="pack-detail-head">
+      <span class="pack-detail-mark" aria-hidden="true">${esc(loaderMark(instance.loader))}</span>
+      <div class="pack-detail-copy">
+        <p class="eyebrow">Selected pack</p>
+        <h2>${esc(instance.name)}</h2>
+        <span>Minecraft ${esc(instance.gameVersion)} · ${esc(loaderLabel(instance.loader))} ${esc(instance.loaderVersion)}</span>
+      </div>
+    </div>
+    <div class="pack-detail-badges">
+      <span class="badge ${selected ? 'badge-soft' : ''}">${selected ? 'Active profile' : 'Inactive'}</span>
+      <span class="badge ${ready ? 'badge-soft' : ''}">${esc(stateLabel)}</span>
+      <span class="badge">${instance.essentialsEnabled ? 'Essentials on' : 'Essentials off'}</span>
+    </div>
+    <div class="pack-facts">
+      <div class="pack-fact"><span>Minecraft</span><strong>${esc(instance.gameVersion)}</strong></div>
+      <div class="pack-fact"><span>Loader</span><strong>${esc(loaderLabel(instance.loader))} ${esc(instance.loaderVersion)}</strong></div>
+      <div class="pack-fact"><span>Created</span><strong>${esc(formatDate(instance.createdAt))}</strong></div>
+      <div class="pack-fact"><span>Folder</span><strong class="pack-path" title="${esc(instance.gameDir)}">${esc(folderName)}</strong></div>
+    </div>
+    <div class="pack-detail-actions">
+      <button class="btn btn-primary btn-sm pack-play" type="button" data-pack-action="play" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>${running ? (state.stopping ? 'Stopping…' : 'Stop game') : 'Play pack'}</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="content" data-pack-id="${esc(instance.id)}">Content</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="folder" data-pack-id="${esc(instance.id)}">Open folder</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="duplicate" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>${duplicating ? 'Copying…' : 'Duplicate'}</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-pack-action="rename" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>Rename</button>
+      <button class="btn btn-quiet btn-sm danger-quiet ${confirming ? 'confirm' : ''}" type="button" data-pack-action="delete" data-pack-id="${esc(instance.id)}" ${busy ? 'disabled' : ''}>${confirming ? 'Confirm delete' : 'Delete'}</button>
+    </div>
+    <p class="card-note pack-detail-note">Duplicating copies this pack's mods, configs, and worlds into a new instance. Renaming only changes its label.</p>
+  `;
+}
+
+function handlePackGridClick(event) {
+  const card = event.target.closest('[data-pack-id]');
+  if (!card) return;
+  selectVersion(card.dataset.packId);
+}
+
+function handlePackGridKeydown(event) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest('[data-pack-id]');
+  if (!card) return;
+  event.preventDefault();
+  selectVersion(card.dataset.packId);
+}
+
+async function handlePackDetailClick(event) {
+  const button = event.target.closest('[data-pack-action]');
+  if (!button) return;
+  const instance = state.modpacks.get(button.dataset.packId || selectedVersionId());
+  if (!instance) return;
+
+  switch (button.dataset.packAction) {
+    case 'play':
+      await playPackFromPage(instance);
+      return;
+    case 'content':
+      state.contentTarget = instance.id;
+      state.content = [];
+      state.contentLoadedFor = '';
+      state.essentials = null;
+      state.essentialsLoadedFor = '';
+      state.render = null;
+      state.renderLoadedFor = '';
+      state.modrinthResults = [];
+      state.modrinthTotal = 0;
+      state.modrinthLoaded = false;
+      state.modrinthError = '';
+      if (selectedVersionId() !== instance.id) await selectVersion(instance.id);
+      navigate('modrinth');
+      return;
+    case 'folder':
+      api.openPath(instance.gameDir).catch((error) => toast(cleanError(error), 'error'));
+      return;
+    case 'duplicate':
+      await duplicatePack(instance);
+      return;
+    case 'rename':
+      openRenamePackModal(instance);
+      return;
+    case 'delete':
+      await deletePackFromPage(instance);
+      return;
+    default:
+  }
+}
+
+async function playPackFromPage(instance) {
+  if (packIsRunning(instance)) {
+    stopGame();
+    return;
+  }
+  if (state.game) {
+    toast('Close Minecraft before launching another pack.', 'warn');
+    return;
+  }
+  if (
+    state.installing ||
+    state.launching ||
+    state.importingModpack ||
+    state.modpackCreating ||
+    state.duplicatingPack
+  ) {
+    toast('Wait for the current operation to finish.', 'warn');
+    return;
+  }
+  if (!currentProfile()) {
+    openAccounts();
+    return;
+  }
+  if (selectedVersionId() !== instance.id) await selectVersion(instance.id);
+  launchGame(instance.id);
+}
+
+async function duplicatePack(instance) {
+  if (!instance || state.duplicatingPack) return;
+  if (state.game) {
+    toast('Close Minecraft before duplicating a modpack.', 'warn');
+    return;
+  }
+  if (state.importingModpack || state.modpackCreating || state.installing || state.launching) {
+    toast('Wait for the current operation to finish.', 'warn');
+    return;
+  }
+
+  state.duplicatingPack = instance.id;
+  state.confirmDeletePackPage = '';
+  renderModpacksPage();
+  try {
+    const result = await api.modpacks.duplicate(instance.id);
+    setModpacks(result.modpacks);
+    await selectVersion(result.instance.id);
+    updatePageTitle();
+    toast(`${result.instance.name} is ready to customize.`, 'success', 5200);
+  } catch (error) {
+    toast(cleanError(error), 'error', 7000);
+  } finally {
+    state.duplicatingPack = '';
+    renderModpacksPage();
+  }
+}
+
+async function deletePackFromPage(instance) {
+  if (state.importingModpack || state.modpackCreating || state.installing || state.launching || state.duplicatingPack) {
+    toast('Wait for the current operation to finish.', 'warn');
+    return;
+  }
+  if (state.game) {
+    toast('Close Minecraft before deleting a modpack.', 'warn');
+    return;
+  }
+
+  if (state.confirmDeletePackPage !== instance.id) {
+    state.confirmDeletePackPage = instance.id;
+    clearTimeout(packDeleteTimer);
+    packDeleteTimer = setTimeout(() => {
+      state.confirmDeletePackPage = '';
+      renderModpacksPage();
+    }, 3500);
+    renderModpacksPage();
+    return;
+  }
+
+  clearTimeout(packDeleteTimer);
+  state.confirmDeletePackPage = '';
+  try {
+    const result = await api.modpacks.remove(instance.id);
+    setModpacks(result.modpacks);
+    if (state.settings.selectedVersion === instance.id) {
+      state.settings.selectedVersion = result.selectedVersion || '';
+    }
+    state.contentTarget = '';
+    state.content = [];
+    state.contentLoadedFor = '';
+    ensureContentTarget();
+    renderAll();
+    updatePageTitle();
+    toast(`${instance.name} deleted.`, 'success');
+  } catch (error) {
+    toast(cleanError(error), 'error', 7000);
+    renderModpacksPage();
+  }
+}
+
+function openRenamePackModal(instance) {
+  if (!instance) return;
+  state.renamingPack = instance.id;
+  state.renameBusy = false;
+  state.renameError = '';
+  const input = $('#renamePackName');
+  if (input) input.value = instance.name;
+  const modal = $('#renamePackModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  renderRenamePackState();
+  setTimeout(() => {
+    input?.focus();
+    input?.select();
+  }, 60);
+}
+
+function closeRenamePackModal() {
+  if (state.renameBusy) return;
+  state.renamingPack = '';
+  state.renameError = '';
+  const modal = $('#renamePackModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function renderRenamePackState() {
+  const errorElement = $('#renamePackError');
+  if (errorElement) {
+    errorElement.hidden = !state.renameError;
+    errorElement.textContent = state.renameError || '';
+  }
+  const submit = $('#renamePackSubmit');
+  if (submit) {
+    submit.disabled = state.renameBusy;
+    submit.textContent = state.renameBusy ? 'Saving…' : 'Save name';
+  }
+  const close = $('#closeRenamePack');
+  if (close) close.disabled = state.renameBusy;
+  const cancel = $('#cancelRenamePack');
+  if (cancel) cancel.disabled = state.renameBusy;
+}
+
+async function handleRenamePackSubmit(event) {
+  event.preventDefault();
+  const instance = state.modpacks.get(state.renamingPack);
+  if (!instance || state.renameBusy) return;
+  const input = $('#renamePackName');
+  const name = input ? input.value.trim() : '';
+  state.renameError = '';
+
+  if (name.length < 2 || name.length > 48) {
+    state.renameError = 'Give the modpack a name between 2 and 48 characters.';
+    renderRenamePackState();
+    return;
+  }
+  if (name === instance.name) {
+    closeRenamePackModal();
+    return;
+  }
+
+  state.renameBusy = true;
+  renderRenamePackState();
+  renderModpacksPage();
+  try {
+    const result = await api.modpacks.rename({ id: instance.id, name });
+    setModpacks(result.modpacks);
+    state.renameBusy = false;
+    closeRenamePackModal();
+    updatePageTitle();
+    toast(`Renamed to ${result.instance.name}.`, 'success');
+  } catch (error) {
+    state.renameError = cleanError(error);
+  } finally {
+    state.renameBusy = false;
+    renderRenamePackState();
+    renderModpacksPage();
+  }
+}
+
+async function saveManagerName() {
+  if (state.renameBusy) return;
+  const instance = state.modpacks.get(managerPackId());
+  if (!instance) return;
+  const input = $('#managerNameInput');
+  const button = $('#managerNameSave');
+  const name = input ? input.value.trim() : '';
+  const showError = (message) => {
+    state.managerError = message;
+    const errorElement = $('#managerError');
+    if (errorElement) {
+      errorElement.hidden = false;
+      errorElement.textContent = message;
+    }
+    input?.focus();
+    input?.select();
+  };
+
+  if (name.length < 2 || name.length > 48) {
+    showError('Give the modpack a name between 2 and 48 characters.');
+    return;
+  }
+  if (name === instance.name) {
+    state.managerError = '';
+    input?.blur();
+    return;
+  }
+
+  state.managerError = '';
+  state.renameBusy = true;
+  if (input) input.disabled = true;
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Saving…';
+  }
+
+  try {
+    const result = await api.modpacks.rename({ id: instance.id, name });
+    setModpacks(result.modpacks);
+    state.renameBusy = false;
+    state.managerError = '';
+    updatePageTitle();
+    renderModpacksPage();
+    toast(`Renamed to ${result.instance.name}.`, 'success');
+  } catch (error) {
+    state.renameBusy = false;
+    if (input) input.disabled = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Save name';
+    }
+    showError(cleanError(error));
+  }
 }
 
 function renderModrinth() {
@@ -3037,6 +3936,7 @@ function handleGameState(game) {
     state.launching = false;
     updateProgressPanel(null);
     renderPlay();
+    renderModpacksPage();
     renderStatus();
     return;
   }
@@ -3050,6 +3950,7 @@ function handleGameState(game) {
     updateProgressPanel(null);
     renderPlay();
     renderVersions();
+    renderModpacksPage();
     renderStatus();
     setConsoleStage(game.status === 'running' ? `Minecraft ${game.versionId} running` : 'Starting Minecraft');
     if (game.status === 'running' && !wasRunning) {
@@ -3066,6 +3967,7 @@ function handleGameState(game) {
     updateProgressPanel(null);
     renderPlay();
     renderVersions();
+    renderModpacksPage();
     renderStatus();
     setConsoleStage(game.stopped ? 'Minecraft stopped' : 'Minecraft closed');
     if (game.stopped) {
@@ -3086,6 +3988,7 @@ function handleGameState(game) {
     updateProgressPanel(null);
     renderPlay();
     renderVersions();
+    renderModpacksPage();
     renderStatus();
     toast(game.error || 'Minecraft could not start.', 'error', 7000);
     openConsole(true);
@@ -3485,6 +4388,7 @@ function renderAll() {
   renderSidebar();
   renderPlay();
   renderVersions();
+  renderModpacksPage();
   renderModrinth();
   renderSettings();
   renderConsole();

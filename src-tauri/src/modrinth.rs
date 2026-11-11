@@ -158,8 +158,8 @@ pub fn normalize_version(version: Version) -> Option<NormalizedVersion> {
 }
 
 pub async fn search(runtime: &Runtime, query: &str, project_type: &str, game_version: &str, loader: &str, offset: u64, limit: u64) -> Result<Value, String> {
-    if !matches!(project_type, "mod" | "resourcepack" | "shader") {
-        return Err("Choose a mod, resource pack, or shader.".into());
+    if !matches!(project_type, "mod" | "resourcepack" | "shader" | "modpack") {
+        return Err("Choose a mod, resource pack, shader, or modpack.".into());
     }
     let type_name = project_type;
     let mut facets: Vec<Vec<String>> = vec![vec![format!("project_type:{type_name}")]];

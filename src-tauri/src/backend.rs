@@ -76,8 +76,10 @@ pub async fn launcher(
             });
             Ok(value)
         }
-        "app:update-check" => crate::updates::check(&app).await,
-        "app:update-install" => crate::updates::install(&app).await,
+        "app:update-check" => {
+            crate::selfupdate::check(&runtime.http, &app.package_info().version.to_string()).await
+        }
+        "app:update-install" => crate::selfupdate::install(&app, &runtime.http).await,
         "catalog:refresh" => runtime.refresh_catalog(true).await,
         "version:install" => {
             let id = crate::paths::validate_version_id(&payload_string(&payload))?;
@@ -191,6 +193,61 @@ pub async fn launcher(
             modpacks::remove_modpack(&runtime, &payload_string(&payload))
         }
         "modpack:list" => Ok(runtime.modpack_list()),
+        "modpack:rename" => {
+            {
+                let state = runtime.state();
+                if state.game.is_some() { return Err("Close Minecraft before renaming a modpack.".into()); }
+                if state.installing.is_some() || state.modpack_job || state.content_job {
+                    return Err("Wait for the current download to finish before renaming a modpack.".into());
+                }
+            }
+            modpacks::rename_modpack(&runtime, payload.unwrap_or_else(|| json!({})))
+        }
+        "modpack:duplicate" => {
+            {
+                let state = runtime.state();
+                if state.game.is_some() { return Err("Close Minecraft before duplicating a modpack.".into()); }
+                if state.installing.is_some() || state.modpack_job || state.content_job {
+                    return Err("Wait for the current download to finish before duplicating a modpack.".into());
+                }
+                drop(state);
+                runtime.state().modpack_job = true;
+            }
+            let result = modpacks::duplicate_modpack(&runtime, &payload_string(&payload)).await;
+            runtime.state().modpack_job = false;
+            if let Err(error) = &result {
+                runtime.log("launcher", "error", &format!("Could not duplicate modpack: {error}"));
+            }
+            result
+        }
+        "modpack:install-modrinth" => {
+            {
+                let state = runtime.state();
+                if state.modpack_job { return Err("Another modpack job is already running.".into()); }
+                if state.content_job { return Err("Wait for the current Modrinth download to finish.".into()); }
+                if state.installing.is_some() { return Err("Wait for the current Minecraft install to finish.".into()); }
+                if state.game.is_some() { return Err("Close Minecraft before installing a modpack.".into()); }
+                drop(state);
+                runtime.state().modpack_job = true;
+            }
+            let result = modpacks::install_modrinth_modpack(&runtime, payload.unwrap_or_else(|| json!({}))).await;
+            runtime.state().modpack_job = false;
+            match result {
+                Ok(value) => {
+                    let list = runtime.modpack_list();
+                    runtime.emit("modpacks:updated", list.clone());
+                    let mut value = value;
+                    if let Some(object) = value.as_object_mut() {
+                        object.insert("modpacks".into(), list);
+                    }
+                    Ok(value)
+                }
+                Err(error) => {
+                    runtime.log("launcher", "error", &format!("Could not install modpack: {error}"));
+                    Err(error)
+                }
+            }
+        }
         "modpack:loader-versions" => {
             let object = payload_object(&payload);
             let loader = object.get("loader").and_then(Value::as_str).unwrap_or("fabric");
@@ -209,6 +266,19 @@ pub async fn launcher(
                 project_type,
                 &target.game_version,
                 if project_type == "mod" { &target.loader } else { "" },
+                object.get("offset").and_then(Value::as_u64).unwrap_or(0),
+                limit,
+            ).await
+        }
+        "modrinth:search-modpacks" => {
+            let object = payload_object(&payload);
+            let limit = runtime.state().settings.modrinth_page_size;
+            modrinth::search(
+                &runtime,
+                object.get("query").and_then(Value::as_str).unwrap_or(""),
+                "modpack",
+                "",
+                "",
                 object.get("offset").and_then(Value::as_u64).unwrap_or(0),
                 limit,
             ).await
