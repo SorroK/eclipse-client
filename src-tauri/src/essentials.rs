@@ -21,10 +21,10 @@ pub struct Item {
 const ALL_LOADERS: &[&str] = &["fabric", "forge", "neoforge"];
 const FABRIC_ONLY: &[&str] = &["fabric"];
 const HUD_SLUG: &str = "eclipse-hud";
-const HUD_VERSION: &str = "1.1.0";
-const HUD_FILE_NAME: &str = "eclipse-hud-1.1.0+1.21.11.jar";
+const HUD_VERSION: &str = "1.1.1";
+const HUD_FILE_NAME: &str = "eclipse-hud-1.1.1+1.21.11.jar";
 const HUD_GAME_VERSIONS: &[&str] = &["1.21.11"];
-const HUD_JAR: &[u8] = include_bytes!("../assets/eclipse-hud-1.1.0+1.21.11.jar");
+const HUD_JAR: &[u8] = include_bytes!("../assets/eclipse-hud-1.1.1+1.21.11.jar");
 const UI_SLUG: &str = "eclipse-ui";
 const UI_VERSION: &str = "1.0.2";
 const UI_GAME_VERSIONS: &[&str] = &["1.21.11"];
@@ -94,7 +94,7 @@ pub const ITEMS: &[Item] = &[
     Item {
         slug: HUD_SLUG,
         title: "Eclipse HUD",
-        description: "Eclipse's own compact FPS, coordinates, biome, dimension, and clock overlay with depth-reprojection motion blur and an owo-lib themed ping and blur control center",
+        description: "Eclipse's own compact FPS, coordinates, biome, dimension, clock, and armor durability overlay with depth-reprojection motion blur and an owo-lib themed control center",
         project_type: "mod",
         loaders: FABRIC_ONLY,
         bundled: true,
@@ -108,15 +108,6 @@ pub const ITEMS: &[Item] = &[
         loaders: ALL_LOADERS,
         bundled: true,
         game_versions: UI_GAME_VERSIONS,
-    },
-    Item {
-        slug: "armor-hud",
-        title: "Armor HUD",
-        description: "Shows armor durability at a glance",
-        project_type: "mod",
-        loaders: ALL_LOADERS,
-        bundled: false,
-        game_versions: &[],
     },
     Item {
         slug: "low-fire-alexin1337",
@@ -164,36 +155,9 @@ pub const ITEMS: &[Item] = &[
         game_versions: &[],
     },
     Item {
-        slug: "mouse-tweaks",
-        title: "Mouse Tweaks",
-        description: "Faster inventory sorting and dragging",
-        project_type: "mod",
-        loaders: ALL_LOADERS,
-        bundled: false,
-        game_versions: &[],
-    },
-    Item {
-        slug: "controlling",
-        title: "Controlling",
-        description: "Searchable key bindings and conflict detection",
-        project_type: "mod",
-        loaders: ALL_LOADERS,
-        bundled: false,
-        game_versions: &[],
-    },
-    Item {
         slug: "betterf3",
         title: "BetterF3",
         description: "A cleaner, more readable debug HUD",
-        project_type: "mod",
-        loaders: ALL_LOADERS,
-        bundled: false,
-        game_versions: &[],
-    },
-    Item {
-        slug: "jade",
-        title: "Jade",
-        description: "See what block or entity you are looking at",
         project_type: "mod",
         loaders: ALL_LOADERS,
         bundled: false,

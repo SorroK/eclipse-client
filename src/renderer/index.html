@@ -188,6 +188,15 @@
                       <filter id="heroEclipseSmallBlur" x="-100%" y="-100%" width="300%" height="300%">
                         <feGaussianBlur stdDeviation="6" />
                       </filter>
+                      <linearGradient id="heroTerrainEdge" x1="0" y1="0" x2="520" y2="0" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="#000" />
+                        <stop offset="0.16" stop-color="#fff" />
+                        <stop offset="0.84" stop-color="#fff" />
+                        <stop offset="1" stop-color="#000" />
+                      </linearGradient>
+                      <mask id="heroTerrainFade" maskUnits="userSpaceOnUse" x="0" y="396" width="520" height="144">
+                        <rect x="0" y="396" width="520" height="144" fill="url(#heroTerrainEdge)" />
+                      </mask>
                     </defs>
                     <ellipse cx="260" cy="246" rx="232" ry="194" fill="url(#heroEclipseHalo)" />
                     <circle cx="260" cy="240" r="124" fill="none" stroke="url(#heroEclipseRim)" stroke-width="18" opacity=".35" filter="url(#heroEclipseBlur)" />
@@ -222,10 +231,10 @@
                       <polygon points="424,271 448,284 448,312 424,299" fill="#a87b37" />
                       <polygon points="472,271 448,284 448,312 472,299" fill="#7d5827" />
                     </g>
-                    <g class="hero-terrain">
+                    <g class="hero-terrain" mask="url(#heroTerrainFade)">
                       <ellipse cx="260" cy="432" rx="236" ry="52" fill="url(#heroHorizon)" />
                       <path d="M0 454h60v-15h31v-19h35v27h42v-12h39v-25h28v18h45v-8h33v16h30v-26h36v-11h47v31h33v14h31v-22h35v22h48v30H0Z" fill="#091711" />
-                      <path d="M0 454h520v74H0Z" fill="url(#heroTerrain)" />
+                      <path d="M0 454h520v132H0Z" fill="url(#heroTerrain)" />
                       <path d="M0 453.5h520" stroke="#59dea0" stroke-opacity=".2" />
                       <path d="m0 512 70-42 52 13 64-25 74 16 55-18 55 15 46-26 70 22 44 32" fill="none" stroke="#2e9c6c" stroke-opacity=".12" />
                       <path d="M0 496h520M102 454v74M204 454v74M308 454v74M412 454v74" stroke="#8af5b9" stroke-opacity=".055" />
@@ -508,7 +517,7 @@
                   <div>
                     <p class="eyebrow">Eclipse extras</p>
                     <h3>Essentials <span class="badge badge-soft" id="essentialsBadge">Recommended</span></h3>
-                    <p class="essentials-lede">Eclipse HUD, custom title and loading art, armor durability, low fire, smaller totem pops, freelook, and more client-side quality-of-life, matched to this pack's loader and Minecraft version.</p>
+                    <p class="essentials-lede">Eclipse HUD with its own armor durability strip, custom title and loading art, low fire, smaller totem pops, freelook, and more client-side quality-of-life, matched to this pack's loader and Minecraft version.</p>
                   </div>
                 </div>
                 <div class="essentials-control">
@@ -557,8 +566,13 @@
                 </div>
               </div>
 
+              <div class="segmented pack-tabs content-view-tabs" id="contentViewTabs" role="tablist" aria-label="Content view">
+                <button type="button" role="tab" data-content-view="browse" aria-selected="true" class="active">Browse</button>
+                <button type="button" role="tab" data-content-view="installed" aria-selected="false">Installed <span class="content-view-count" id="contentViewCount">0</span></button>
+              </div>
+
               <div class="content-layout">
-                <div class="content-browser">
+                <div class="content-browser" id="contentBrowsePanel">
                   <div class="toolbar card content-toolbar">
                     <label class="search-field">
                       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.2" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="m13 13 3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
@@ -589,7 +603,7 @@
                   <div class="content-foot" id="modrinthFooter" hidden></div>
                 </div>
 
-                <aside class="content-side card">
+                <aside class="content-side card" id="contentInstalledPanel" hidden>
                   <div class="card-heading">
                     <div>
                       <p class="eyebrow">This pack</p>

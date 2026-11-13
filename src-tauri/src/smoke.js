@@ -33,9 +33,25 @@
     const closePack = document.querySelector('#closeModpackModal');
     if (closePack) closePack.click();
 
+    const contentViewInstalledTab = document.querySelector('#contentViewTabs [data-content-view="installed"]');
+    const contentViewBrowseTab = document.querySelector('#contentViewTabs [data-content-view="browse"]');
+    const browsePanel = document.querySelector('#contentBrowsePanel');
+    const installedPanel = document.querySelector('#contentInstalledPanel');
+    if (contentViewInstalledTab) contentViewInstalledTab.click();
+    const contentViewSwitched = Boolean(
+      installedPanel && !installedPanel.hidden && browsePanel && browsePanel.hidden
+    );
+    if (contentViewBrowseTab) contentViewBrowseTab.click();
+    const contentViewRestored = Boolean(
+      browsePanel && !browsePanel.hidden && installedPanel && installedPanel.hidden
+    );
+
     const result = {
       ready: Boolean(launcher.state && launcher.state.ready),
       title: document.title,
+      contentViewTabs: Boolean(document.querySelector('#contentViewTabs')),
+      contentViewSwitched,
+      contentViewRestored,
       pages: Array.from(document.querySelectorAll('[data-page-panel]')).map((panel) => panel.dataset.pagePanel),
       versionRows: document.querySelectorAll('.version-row').length,
       playLabel: (document.querySelector('#playLabel') || {}).textContent || '',
@@ -102,6 +118,9 @@
       deletePackButton: result.deletePackButton,
       modrinthActive: result.modrinthActive,
       modrinthLayout: result.modrinthLayout === 'grid',
+      contentViewTabs: result.contentViewTabs,
+      contentViewSwitched: result.contentViewSwitched,
+      contentViewRestored: result.contentViewRestored,
       modrinthTargetOptions: result.modrinthTargetOptions > 0,
       modrinthPageSize: result.modrinthPageSize,
       modrinthPageSizeOptions: result.modrinthPageSizeOptions === 3,

@@ -7,6 +7,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.biome.Biome;
 
 import java.io.IOException;
@@ -25,6 +27,9 @@ public final class EclipseHud {
 	private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 	private static final Path CONFIG = FabricLoader.getInstance().getConfigDir().resolve("eclipse-hud.properties");
 	private static final int MAX_PING = 1000;
+	private static final EquipmentSlot[] ARMOR_SLOTS = {
+		EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
+	};
 
 	private static boolean loaded;
 	private static boolean enabled = true;
@@ -33,6 +38,8 @@ public final class EclipseHud {
 	private static boolean showBiome = true;
 	private static boolean showDimension = true;
 	private static boolean showClock = true;
+	private static boolean armorHud = true;
+	private static boolean armorHudNumbers = true;
 	private static boolean motionBlur = false;
 	private static int motionBlurStrength = 50;
 	private static boolean motionBlurPlayers = true;
@@ -65,6 +72,8 @@ public final class EclipseHud {
 		showBiome = readBoolean(properties, "show_biome", true);
 		showDimension = readBoolean(properties, "show_dimension", true);
 		showClock = readBoolean(properties, "show_clock", true);
+		armorHud = readBoolean(properties, "armor_hud", true);
+		armorHudNumbers = readBoolean(properties, "armor_hud_numbers", true);
 		motionBlur = readBoolean(properties, "motion_blur", false);
 		motionBlurStrength = readInt(properties, "motion_blur_strength", 50, 0, 100);
 		motionBlurPlayers = readBoolean(properties, "motion_blur_players", true);
@@ -74,7 +83,9 @@ public final class EclipseHud {
 		if (!properties.containsKey("ping_override")
 			|| !properties.containsKey("ping_value")
 			|| !properties.containsKey("motion_blur_strength")
-			|| !properties.containsKey("motion_blur_players")) {
+			|| !properties.containsKey("motion_blur_players")
+			|| !properties.containsKey("armor_hud")
+			|| !properties.containsKey("armor_hud_numbers")) {
 			save();
 		}
 	}
@@ -151,6 +162,22 @@ public final class EclipseHud {
 		showClock = value;
 	}
 
+	public static boolean armorHud() {
+		return armorHud;
+	}
+
+	public static void setArmorHud(boolean value) {
+		armorHud = value;
+	}
+
+	public static boolean armorHudNumbers() {
+		return armorHudNumbers;
+	}
+
+	public static void setArmorHudNumbers(boolean value) {
+		armorHudNumbers = value;
+	}
+
 	public static boolean motionBlur() {
 		return motionBlur;
 	}
@@ -220,6 +247,8 @@ public final class EclipseHud {
 		properties.setProperty("show_biome", Boolean.toString(showBiome));
 		properties.setProperty("show_dimension", Boolean.toString(showDimension));
 		properties.setProperty("show_clock", Boolean.toString(showClock));
+		properties.setProperty("armor_hud", Boolean.toString(armorHud));
+		properties.setProperty("armor_hud_numbers", Boolean.toString(armorHudNumbers));
 		properties.setProperty("motion_blur", Boolean.toString(motionBlur));
 		properties.setProperty("motion_blur_strength", Integer.toString(motionBlurStrength));
 		properties.setProperty("motion_blur_players", Boolean.toString(motionBlurPlayers));
@@ -296,10 +325,14 @@ public final class EclipseHud {
 			lines.add(new Line("TIME", LocalTime.now().format(CLOCK),
 				light ? 0xFF8A5A00 : 0xFFE8D98A));
 		}
-		if (lines.isEmpty()) {
-			return;
+		if (!lines.isEmpty()) {
+			renderPanel(context, client, lines, accent, accentDark, label, value);
 		}
+		renderArmor(context, client);
+	}
 
+	private static void renderPanel(GuiGraphics context, Minecraft client, List<Line> lines,
+		int accent, int accentDark, int label, int value) {
 		Font font = client.font;
 		int labelWidth = 0;
 		int valueWidth = 0;
@@ -334,6 +367,65 @@ public final class EclipseHud {
 			context.drawString(font, line.value(), x + 8 + labelWidth + 8, rowY, line.color(), true);
 			rowY += 10;
 		}
+	}
+
+	private static void renderArmor(GuiGraphics context, Minecraft client) {
+		if (!armorHud || client.player == null) {
+			return;
+		}
+		List<ItemStack> pieces = new ArrayList<>();
+		for (EquipmentSlot slot : ARMOR_SLOTS) {
+			ItemStack stack = client.player.getItemBySlot(slot);
+			if (!stack.isEmpty()) {
+				pieces.add(stack);
+			}
+		}
+		if (pieces.isEmpty()) {
+			return;
+		}
+
+		Font font = client.font;
+		boolean light = EclipseTheme.isLight();
+		int cell = 20;
+		int contentHeight = armorHudNumbers ? 30 : 20;
+		int stripHeight = contentHeight + 6;
+		int stripWidth = pieces.size() * cell + 8;
+		int screenWidth = client.getWindow().getGuiScaledWidth();
+		int screenHeight = client.getWindow().getGuiScaledHeight();
+		int x = (screenWidth - stripWidth) / 2;
+		int y = screenHeight - 24 - stripHeight;
+
+		context.fill(x + 1, y + 1, x + stripWidth + 1, y + stripHeight + 1, 0x55000000);
+		EclipseDraw.rounded(context, x, y, stripWidth, stripHeight, 5, EclipseTheme.panelOverlay());
+		context.fill(x + 6, y, x + stripWidth - 6, y + 1, EclipseTheme.accent());
+
+		int itemTop = y + 3;
+		int barY = itemTop + 18;
+		for (int index = 0; index < pieces.size(); index++) {
+			ItemStack stack = pieces.get(index);
+			int itemX = x + 4 + index * cell;
+			context.renderItem(stack, itemX, itemTop);
+			float ratio = durability(stack);
+			int barColor = ratio > 0.6f
+				? (light ? 0xFF137A46 : 0xFF8EF0B0)
+				: ratio > 0.3f
+					? (light ? 0xFF8A6200 : 0xFFE8D98A)
+					: (light ? 0xFFA62B2B : 0xFFFF7A7A);
+			context.fill(itemX + 1, barY, itemX + 15, barY + 2, 0x66000000);
+			context.fill(itemX + 1, barY, itemX + 1 + Math.round(14f * ratio), barY + 2, barColor);
+			if (armorHudNumbers) {
+				String text = Math.round(ratio * 100f) + "%";
+				context.drawString(font, text, itemX + (16 - font.width(text)) / 2, barY + 4,
+					EclipseTheme.text(), true);
+			}
+		}
+	}
+
+	private static float durability(ItemStack stack) {
+		if (!stack.isDamageableItem() || stack.getMaxDamage() <= 0) {
+			return 1f;
+		}
+		return Math.max(0f, 1f - (float) stack.getDamageValue() / (float) stack.getMaxDamage());
 	}
 
 	private static String pretty(String raw) {

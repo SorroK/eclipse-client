@@ -954,14 +954,19 @@ body.is-maximized .maximize-btn .icon-restore {
 .meta-bars span {
   width: 10px;
   border-radius: 2px 2px 0 0;
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.7), rgba(var(--accent-rgb), 0.14));
+  background: rgba(255, 255, 255, 0.07);
+  transition: background 0.25s ease, opacity 0.25s ease;
 }
 
-.meta-bars span:nth-child(1) { height: 6px; opacity: 0.4; }
-.meta-bars span:nth-child(2) { height: 10px; opacity: 0.55; }
-.meta-bars span:nth-child(3) { height: 8px; opacity: 0.7; }
-.meta-bars span:nth-child(4) { height: 14px; opacity: 0.85; }
-.meta-bars span:nth-child(5) { height: 18px; }
+.meta-bars span.on {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.85), rgba(var(--accent-rgb), 0.24));
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.16);
+}
+
+.meta-bars span {
+  height: 12px;
+}
 
 .sidebar-spacer {
   flex: 1;
@@ -1234,10 +1239,10 @@ h1 {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
-  min-height: 356px;
+  grid-template-columns: minmax(0, 1.02fr) minmax(300px, 0.98fr);
+  min-height: 338px;
   overflow: hidden;
-  padding: 34px 38px;
+  padding: 30px 34px;
   isolation: isolate;
 }
 
@@ -1245,7 +1250,7 @@ h1 {
   content: "";
   position: absolute;
   top: 0;
-  left: 38px;
+  left: 34px;
   width: 74px;
   height: 1px;
   background: linear-gradient(90deg, var(--accent), transparent);
@@ -1337,12 +1342,12 @@ h1 {
 }
 
 .hero-title {
-  margin: 18px 0 15px;
+  margin: 16px 0 13px;
   font-family: var(--font-display);
-  font-size: clamp(42px, 5.3vw, 62px);
+  font-size: clamp(36px, 4.5vw, 52px);
   font-weight: 690;
-  letter-spacing: -0.055em;
-  line-height: 0.93;
+  letter-spacing: -0.05em;
+  line-height: 0.96;
 }
 
 .hero-title em {
@@ -1352,11 +1357,11 @@ h1 {
 }
 
 .hero-sub {
-  max-width: 440px;
+  max-width: 428px;
   margin: 0;
   color: var(--muted);
   font-size: 12.5px;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .hero-actions {
@@ -1364,17 +1369,21 @@ h1 {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-top: 23px;
+  margin-top: 20px;
 }
 
 .launch-hint {
   min-height: 15px;
-  margin: 13px 0 0;
+  max-width: 100%;
+  margin: 12px 0 0;
+  overflow: hidden;
   color: var(--dim);
   font-family: var(--font-mono);
   font-size: 8.5px;
   letter-spacing: 0.02em;
   line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- Buttons ---------- */
@@ -1525,14 +1534,17 @@ h1 {
 .hero-art {
   position: relative;
   display: grid;
-  min-height: 300px;
+  min-height: 282px;
   place-items: center;
 }
 
 .hero-eclipse {
   position: relative;
   z-index: 2;
-  width: min(100%, 430px);
+  width: min(100%, 366px);
+  max-height: 330px;
+  -webkit-mask-image: radial-gradient(118% 102% at 50% 44%, #000 58%, transparent 94%);
+  mask-image: radial-gradient(118% 102% at 50% 44%, #000 58%, transparent 94%);
   filter: drop-shadow(0 28px 38px rgba(0, 0, 0, 0.35));
   animation: eclipse-float 8s ease-in-out infinite;
   transform-origin: 50% 55%;
@@ -1642,10 +1654,10 @@ h1 {
 .stat-card {
   display: flex;
   flex-direction: column;
-  min-height: 138px;
-  gap: 13px;
-  padding: 17px 18px 15px;
-  transition: border-color 0.18s ease, transform 0.18s ease;
+  min-height: 136px;
+  gap: 11px;
+  padding: 15px 18px 13px;
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
 }
 
 .stat-card:hover {
@@ -1747,9 +1759,18 @@ h1 {
 
 .stat-note {
   margin: auto 0 0;
-  color: var(--faint);
-  font-size: 9.5px;
-  line-height: 1.5;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.stat-main .avatar-lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  font-size: 15px;
 }
 
 .path-snippet {
@@ -4487,9 +4508,48 @@ body:not(.ready) .page {
 
 .content-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 10px;
+}
+
+.content-view-tabs {
+  margin-bottom: 10px;
+}
+
+.content-view-count {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 7px;
+  letter-spacing: 0.02em;
+}
+
+.content-view-tabs button.active .content-view-count {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+}
+
+/* Installed content is its own tab, so it uses the full width instead of a rail. */
+#contentInstalledPanel {
+  position: static;
+  max-height: none;
+  padding: 16px 18px;
+}
+
+#contentInstalledPanel[hidden] {
+  display: none;
+}
+
+#contentInstalledPanel .installed-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 6px;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .content-browser {
@@ -4532,7 +4592,7 @@ body:not(.ready) .page {
 
 .content-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
   gap: 8px;
   min-height: 180px;
 }

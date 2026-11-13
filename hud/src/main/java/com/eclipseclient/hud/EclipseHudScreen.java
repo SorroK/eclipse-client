@@ -164,6 +164,8 @@ public final class EclipseHudScreen extends BaseOwoScreen<FlowLayout> {
 			() -> EclipseHud.setShowFps(!EclipseHud.showFps()), false));
 		left.child(hudRow("Coordinates", EclipseHud.showCoordinates(),
 			() -> EclipseHud.setShowCoordinates(!EclipseHud.showCoordinates()), false));
+		left.child(hudRow("Armor hud", EclipseHud.armorHud(),
+			() -> EclipseHud.setArmorHud(!EclipseHud.armorHud()), false));
 
 		FlowLayout right = hudColumn();
 		right.child(hudRow("Biome", EclipseHud.showBiome(),
@@ -174,6 +176,8 @@ public final class EclipseHudScreen extends BaseOwoScreen<FlowLayout> {
 			() -> EclipseHud.setShowClock(!EclipseHud.showClock()), false));
 		right.child(hudRow("Motion blur", EclipseHud.motionBlur(),
 			() -> EclipseHud.setMotionBlur(!EclipseHud.motionBlur()), false));
+		right.child(hudRow("Armor numbers", EclipseHud.armorHudNumbers(),
+			() -> EclipseHud.setArmorHudNumbers(!EclipseHud.armorHudNumbers()), !EclipseHud.armorHud()));
 
 		columns.child(left).child(right);
 		content.child(columns);

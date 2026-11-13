@@ -18,7 +18,7 @@ Source and releases: [github.com/SorroK/eclipse-client](https://github.com/Sorro
 - Creates isolated Fabric, Forge, and NeoForge modpacks. Forge and NeoForge use their official installer JARs.
 - Imports Modrinth `.mrpack` files with SHA-1/SHA-512 verification and `overrides` / `client-overrides` extraction.
 - Searches Modrinth for compatible mods, resource packs, and shaders, resolves required dependencies, and tracks files in `eclipse-content.json`.
-- Bundles **Eclipse Essentials** into modpacks: Eclipse HUD (Eclipse's own overlay), Eclipse UI (Eclipse's own theme-matched loading and title-screen art), Armor HUD, Low Fire, Small Totem Pop, Freelook, Zoomify, AppleSkin, Mouse Tweaks, Controlling, BetterF3, and Jade. Each pack has an on/off switch; compatible jars are resolved from Modrinth for its loader and Minecraft version, except Eclipse HUD and Eclipse UI, which ship with the launcher.
+- Bundles **Eclipse Essentials** into modpacks: Eclipse HUD (Eclipse's own overlay, including its armor durability strip), Eclipse UI (Eclipse's own theme-matched loading and title-screen art), Low Fire, Small Totem Pop, Freelook, Zoomify, AppleSkin, and BetterF3. Each pack has an on/off switch; compatible jars are resolved from Modrinth for its loader and Minecraft version, except Eclipse HUD and Eclipse UI, which ship with the launcher.
 - Sets separate per-entity render distances in blocks for item frames, players, dropped items, and armor stands through Entity View Distance on Fabric packs.
 - Loads 20, 50, or 100 Modrinth results at a time; the choice is saved in settings.
 - Streams launcher and game output into the existing console.
@@ -30,7 +30,7 @@ Official Mojang versions remain vanilla. Mods, resource packs, and shaders are i
 
 ## Eclipse Essentials
 
-Eclipse Essentials is the built-in client QoL bundle for modpacks. It currently includes Eclipse HUD, Eclipse UI, Armor HUD, Low Fire, Small Totem Pop, Freelook, Zoomify, AppleSkin, Mouse Tweaks, Controlling, BetterF3, and Jade. Most items are third-party projects; the launcher resolves the newest compatible jars and resource packs from Modrinth for the selected pack. Eclipse HUD and Eclipse UI are different: they are Eclipse Client's own assets, built from the source in `hud/` and `tools/` and embedded in the launcher.
+Eclipse Essentials is the built-in client QoL bundle for modpacks. It currently includes Eclipse HUD (with its own armor HUD), Eclipse UI, Low Fire, Small Totem Pop, Freelook, Zoomify, AppleSkin, and BetterF3. Most remaining items are third-party projects; the launcher resolves the newest compatible jars and resource packs from Modrinth for the selected pack. Eclipse HUD and Eclipse UI are different: they are Eclipse Client's own assets, built from the source in `hud/` and `tools/` and embedded in the launcher.
 
 Essentials is enabled for each modpack by default. It installs on the first launch (or from **Content studio → Install now**) and can be switched off per pack. Turning it off removes only Essentials-managed files; shared dependency jars stay installed so unrelated mods are not broken. Low Fire, Small Totem Pop, and Eclipse UI are resource packs, so Eclipse also enables them in the pack's `options.txt`. Eclipse UI is installed in the variant matching the launcher theme.
 

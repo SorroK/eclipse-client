@@ -10,9 +10,12 @@ It displays:
 - Biome
 - Dimension
 - Current real-world time
+- Armor durability for every equipped piece, as a themed bar and percentage
 - Optional velocity-based, depth-reprojection motion blur
 
-The panel is drawn in the top-left by default. Press **Right Shift** in-game to
+The panel is drawn in the top-left by default. The armor strip sits centered
+just above the hotbar and only appears while armor is equipped. Press **Right
+Shift** in-game to
 open the themed control center. The key can be rebound under **Options →
 Controls → Key Binds** in the **Eclipse HUD** category. The control center
 follows the launcher's selected theme and includes **PING** and **BLUR** tabs.
@@ -26,6 +29,7 @@ The **HUD** tab controls:
 - Whether the HUD is enabled
 - Which corner the panel uses
 - Whether each row is shown (FPS, coordinates, biome, dimension, clock)
+- Whether the armor strip and its durability percentages are shown
 - Whether motion blur is enabled
 
 The **PING** tab controls the displayed ping (0–1000 ms) with a toggle, slider,
@@ -52,6 +56,8 @@ show_coordinates=true
 show_biome=true
 show_dimension=true
 show_clock=true
+armor_hud=true
+armor_hud_numbers=true
 motion_blur=false
 motion_blur_strength=50
 motion_blur_players=true
@@ -60,7 +66,9 @@ ping_value=120
 ```
 
 `position` accepts `top_left`, `top_right`, `bottom_left`, or `bottom_right`.
-Set any `show_*` key to `false` to hide that row. `motion_blur` enables the
+Set any `show_*` key to `false` to hide that row. `armor_hud` toggles the armor
+strip, and `armor_hud_numbers` toggles the percentages under each piece.
+`motion_blur` enables the
 effect, `motion_blur_strength` is 0–100, and `motion_blur_players` controls
 whether players are part of the blurred scene. The HUD itself stays sharp.
 `ping_override` enables the displayed-ping override and `ping_value` is the
@@ -84,7 +92,7 @@ build; the mod itself targets Java 21.
 ./gradlew build
 ```
 
-The remapped jar is written to `build/libs/eclipse-hud-1.1.0+1.21.11.jar`.
+The remapped jar is written to `build/libs/eclipse-hud-1.1.1+1.21.11.jar`.
 Copy it to `../src-tauri/assets/` before rebuilding the launcher; the launcher
 embeds that exact file with `include_bytes!`.
 

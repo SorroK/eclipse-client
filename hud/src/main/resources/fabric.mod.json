@@ -3,7 +3,7 @@
   "id": "eclipse-hud",
   "version": "${version}",
   "name": "Eclipse HUD",
-  "description": "Eclipse Client's own compact client HUD with FPS, coordinates, biome, dimension, a real clock, depth-reprojection motion blur, and an owo-lib themed ping and blur control center. Press Right Shift to open it.",
+  "description": "Eclipse Client's own compact client HUD with FPS, coordinates, biome, dimension, a real clock, an armor durability strip, depth-reprojection motion blur, and an owo-lib themed control center. Press Right Shift to open it.",
   "authors": [
     "Eclipse Client"
   ],

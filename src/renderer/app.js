@@ -66,6 +66,7 @@ const state = {
   renderBusy: false,
   renderNote: '',
   contentTab: 'mod',
+  contentView: 'browse',
   modrinthQuery: '',
   modrinthResults: [],
   modrinthTotal: 0,
@@ -862,6 +863,11 @@ function bindStaticEvents() {
 
   $('#contentTarget').addEventListener('change', handleContentTargetChange);
   $('#contentTabs').addEventListener('click', handleContentTabClick);
+  $('#contentViewTabs').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-content-view]');
+    if (!button) return;
+    setContentView(button.dataset.contentView);
+  });
   $('#modrinthSearch').addEventListener('input', (event) => {
     state.modrinthQuery = event.target.value.trim();
     clearTimeout(modrinthSearchTimer);
@@ -1515,6 +1521,12 @@ function renderSidebar() {
   paintAvatar($('#sidebarAvatar'), profile);
   setText('#sidebarName', profile ? profile.name : 'Add profile');
   setText('#sidebarType', profile ? accountTypeLabel(profile.type) : 'No account selected');
+
+  const bars = document.querySelector('.meta-bars');
+  if (bars) {
+    const filled = Math.min(bars.children.length, count);
+    Array.from(bars.children).forEach((bar, index) => bar.classList.toggle('on', index < filled));
+  }
 }
 
 function renderPlay() {
@@ -2934,6 +2946,7 @@ function renderModrinth() {
   }
 
   setText('#installedContentCount', String(state.content.length));
+  setContentView(state.contentView);
   $$('#contentTabs [data-content-tab]').forEach((button) => {
     button.classList.toggle('active', button.dataset.contentTab === state.contentTab);
   });
@@ -2951,6 +2964,20 @@ function renderModrinth() {
   renderModrinthResults(target);
   renderEssentials(target);
   renderRenderDistances(target);
+}
+
+function setContentView(view) {
+  state.contentView = view === 'installed' ? 'installed' : 'browse';
+  const browse = $('#contentBrowsePanel');
+  const installed = $('#contentInstalledPanel');
+  if (browse) browse.hidden = state.contentView !== 'browse';
+  if (installed) installed.hidden = state.contentView !== 'installed';
+  setText('#contentViewCount', String(state.content.length));
+  $$('#contentViewTabs [data-content-view]').forEach((button) => {
+    const active = button.dataset.contentView === state.contentView;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
 }
 
 function renderEssentials(target) {
